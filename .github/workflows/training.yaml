@@ -20,7 +20,7 @@ env:
 jobs:
   train:
     name: 🏃 Run Training
-    runs-on: ubuntu-latest
+    runs-on: self-hosted-local  # Use our runner for local testing
     
     steps:
       - name: 📦 Checkout code
@@ -43,7 +43,9 @@ jobs:
           password: ${{ secrets.DOCKER_TOKEN }}
       
       - name: 🤖 Run MLflow command
-        run: ${{ inputs.mlflow_command }}
+        run: |
+          source .venv/bin/activate
+          ${{ inputs.mlflow_command }}
       
       - name: 📊 Summary
         run: |
