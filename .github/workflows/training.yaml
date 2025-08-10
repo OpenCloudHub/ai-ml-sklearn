@@ -1,0 +1,41 @@
+name: Train Wine Classifier
+
+on:
+  workflow_dispatch:
+    inputs:
+      mlflow_command:
+        description: 'MLflow run command'
+        required: true
+        default: 'mlflow run . --entry-point training'
+        type: string
+
+env:
+  MLFLOW_TRACKING_URI: "http://172.17.0.1:8081"
+  MLFLOW_EXPERIMENT_NAME: "wine-quality"
+
+jobs:
+  train:
+    name: 🏃 Run Training
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📦 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔐 Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: 📥 Pull training image
+        run: docker pull opencloudhuborg/wine-classifier-training:latest
+
+      - name: 🤖 Run MLflow command
+        run: ${{ inputs.mlflow_command }}
+
+      - name: 📊 Summary
+        run: |
+          echo "## 🤖 Training Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "- **Command**: \`${{ inputs.mlflow_command }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **MLflow UI**: ${{ env.MLFLOW_TRACKING_URI }}" >> $GITHUB_STEP_SUMMARY

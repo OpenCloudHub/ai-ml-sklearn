@@ -1,0 +1,49 @@
+name: Wine Classifier
+
+docker_env:
+  image: opencloudhuborg/wine-classifier:latest
+  volumes:
+    - /home/lukas/Development/projects/opencloudhub/dev/teams/ai/ai-ml-sklearn/:/mlflow/projects/code
+  environment:
+    - [MLFLOW_TRACKING_URI, "http://172.17.0.1:8081"]
+    - [MLFLOW_EXPERIMENT_NAME, "wine-quality"]
+
+entry_points:
+  main:
+    parameters:
+      task: {type: str, default: "training"}
+    command: |
+      if [ "{task}" = "training" ]; then
+        python src/training.py
+      elif [ "{task}" = "hyperparameter_tuning" ]; then
+        python src/hyperparameter_tuning.py
+      else
+        echo "Unknown task: {task}"
+        exit 1
+      fi
+
+  training:
+    parameters:
+      C: {type: float, default: 1.0}
+      max_iter: {type: int, default: 100}
+      solver: {type: str, default: "lbfgs"}
+      test_size: {type: float, default: 0.2}
+      random_state: {type: int, default: 42}
+    command: >
+      python src/training.py
+      --C {C}
+      --max_iter {max_iter}
+      --solver {solver}
+      --test_size {test_size}
+      --random_state {random_state}
+
+  hyperparameter_tuning:
+    parameters:
+      n_trials: {type: int, default: 20}
+      test_size: {type: float, default: 0.2}
+      random_state: {type: int, default: 42}
+    command: >
+      python src/hyperparameter_tuning.py
+      --n_trials {n_trials}
+      --test_size {test_size}
+      --random_state {random_state}
