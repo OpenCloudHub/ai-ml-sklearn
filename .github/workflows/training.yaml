@@ -20,7 +20,7 @@ env:
 jobs:
   train:
     name: 🏃 Run Training
-    runs-on: self-hosted  # Use our runner for local testing
+    runs-on: self-hosted-local  # Use our runner for local testing
     
     steps:
       - name: 📦 Checkout code
