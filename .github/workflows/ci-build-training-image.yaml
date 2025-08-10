@@ -17,7 +17,7 @@ on:
 
 jobs:
   docker-build:
-    uses: opencloudhuborg/.github/.github/workflows/shared-docker-build.yaml@main
+    uses: opencloudhuborg/.github/.github/workflows/shared-ci-docker-build-push.yaml@main
     with:
       repo-name: "wine-classifier-training"
       context: "."
