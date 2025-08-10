@@ -1,4 +1,8 @@
-name: Train Wine Classifier
+name: 🤖 Train Wine Classifier
+
+# This workflow demonstrates MLflow integration with containerized training environments.
+# Code is mounted into containers at runtime to avoid rebuilds on every change.
+# The training image contains only the Python environment - source code comes from the repo.
 
 on:
   workflow_dispatch:
@@ -17,23 +21,30 @@ jobs:
   train:
     name: 🏃 Run Training
     runs-on: ubuntu-latest
-
+    
     steps:
       - name: 📦 Checkout code
         uses: actions/checkout@v4
-
+      
+      - name: 🐍 Setup Python and install MLflow
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      
+      - name: 📦 Install dependencies
+        run: |
+          pip install uv
+          uv sync --dev
+      
       - name: 🔐 Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
-
-      - name: 📥 Pull training image
-        run: docker pull opencloudhuborg/wine-classifier-training:latest
-
+      
       - name: 🤖 Run MLflow command
         run: ${{ inputs.mlflow_command }}
-
+      
       - name: 📊 Summary
         run: |
           echo "## 🤖 Training Complete!" >> $GITHUB_STEP_SUMMARY
