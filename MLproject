@@ -1,9 +1,11 @@
 name: Wine Classifier
 
 docker_env:
-  image: opencloudhuborg/wine-classifier:latest
+  image: opencloudhuborg/wine-classifier-training:latest
+  # Here you can mount code into the container. when running locally, just mount the local code path eh:
+  # - /home/lukas/Development/projects/opencloudhub/dev/teams/ai/ai-ml-sklearn/:/mlflow/projects/code
   volumes:
-    - /home/lukas/Development/projects/opencloudhub/dev/teams/ai/ai-ml-sklearn/:/mlflow/projects/code
+    - .:/mlflow/projects/code
   environment:
     - [MLFLOW_TRACKING_URI, "http://172.17.0.1:8081"]
     - [MLFLOW_EXPERIMENT_NAME, "wine-quality"]
