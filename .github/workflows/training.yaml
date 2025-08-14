@@ -27,48 +27,51 @@ jobs:
     name: 🏃 Run Training
     runs-on: self-hosted-local  # Change to ubuntu-latest for production
     steps:
+      - name: Create RayJob manifest
+        run: |
+          cat > /tmp/rayjob.yaml <<EOF
+          apiVersion: ray.io/v1
+          kind: RayJob
+          metadata:
+            name: ${{ github.event.repository.name }}-${{ github.run_id }}
+            namespace: ai
+            labels:
+              repo: ${{ github.event.repository.name }}
+              run-id: "${{ github.run_id }}"
+          spec:
+            ttlSecondsAfterFinished: 300
+            rayClusterSpec:
+              rayVersion: "2.48.0"
+              headGroupSpec:
+                serviceType: ClusterIP
+                template:
+                  spec:
+                    containers:
+                    - name: ray-head
+                      image: opencloudhuborg/wine-classifier-training:latest
+                      resources:
+                        requests: ${{ fromJSON(inputs.ray_resources) }}
+                      env:
+                      - name: MLFLOW_TRACKING_URI
+                        value: http://mlflow.mlops.svc.cluster.local:5000
+                      - name: MLFLOW_EXPERIMENT_NAME
+                        value: ${{ inputs.experiment_name }}
+              workerGroupSpecs:
+              - replicas: 1
+                groupName: worker
+                template:
+                  spec:
+                    containers:
+                    - name: ray-worker
+                      image: opencloudhuborg/wine-classifier-training:latest
+                      resources:
+                        requests: ${{ fromJSON(inputs.ray_resources) }}
+            entrypoint: python ${{ inputs.script_path }} ${{ inputs.extra_args }}
+          EOF
+
       - name: Submit Ray Job
         uses: actions-hub/kubectl@master
         env:
             KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
         with:
-          args: |
-            apply -f - <<EOF
-            apiVersion: ray.io/v1
-            kind: RayJob
-            metadata:
-              name: ${{ github.event.repository.name }}-${{ github.run_id }}
-              namespace: ai
-              labels:
-                repo: ${{ github.event.repository.name }}
-                run-id: "${{ github.run_id }}"
-            spec:
-              ttlSecondsAfterFinished: 300
-              rayClusterSpec:
-                rayVersion: "2.48.0"
-                headGroupSpec:
-                  serviceType: ClusterIP
-                  template:
-                    spec:
-                      containers:
-                      - name: ray-head
-                        image: opencloudhuborg/wine-classifier-training:latest
-                        resources:
-                          requests: ${{ fromJSON(inputs.ray_resources) }}
-                        env:
-                        - name: MLFLOW_TRACKING_URI
-                          value: http://mlflow.mlops.svc.cluster.local:5000
-                        - name: MLFLOW_EXPERIMENT_NAME
-                          value: ${{ inputs.experiment_name }}
-                workerGroupSpecs:
-                - replicas: 1
-                  groupName: worker
-                  template:
-                    spec:
-                      containers:
-                      - name: ray-worker
-                        image: opencloudhuborg/wine-classifier-training:latest
-                        resources:
-                          requests: ${{ fromJSON(inputs.ray_resources) }}
-              entrypoint: python ${{ inputs.script_path }} ${{ inputs.extra_args }}
-            EOF
+          args: apply -f /tmp/rayjob.yaml
