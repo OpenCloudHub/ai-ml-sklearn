@@ -50,7 +50,7 @@ jobs:
         id: submit
         run: |
           JOB_NAME=${{ github.event.repository.name }}-${{ github.run_id }}
-          
+
           cat <<EOF | ~/.local/bin/kubectl apply -f -
           apiVersion: ray.io/v1
           kind: RayJob
@@ -95,13 +95,13 @@ jobs:
                           memory: "${{ inputs.memory }}"
             entrypoint: python ${{ inputs.script_path }} ${{ inputs.extra_args }}
           EOF
-          
+
           echo "job_name=${JOB_NAME}" >> $GITHUB_OUTPUT
 
       - name: 📊 Provide Developer Monitoring Commands
         run: |
           JOB_NAME=${{ steps.submit.outputs.job_name }}
-          
+
           echo "========================================="
           echo "🚀 RAY JOB SUBMITTED: ${JOB_NAME}"
           echo "🎯 Repository: ${{ github.event.repository.name }}"
