@@ -1,81 +1,73 @@
-name: 🤖 Train Wine Classifier
+name: 🍷 Train Wine Classifier
 
 on:
- workflow_dispatch:
-   inputs:
-     script_path:
-       description: 'Training script to run'
-       required: true
-       default: 'src/training/train.py'
-       type: string
-     extra_args:
-       description: 'Additional arguments (e.g., --epochs 50 --batch-size 32)'
-       required: false
-       type: string
-     ray_resources:
-       description: 'Ray resource requirements (JSON)'
-       required: false
-       default: '{"num_cpus": 1, "memory": "2Gi"}'
-       type: string
-     experiment_name:
-       description: 'MLflow experiment name'
-       required: false
-       default: wine-quality
+  workflow_dispatch:
+    inputs:
+      script_path:
+        description: 'Training script to run'
+        required: true
+        default: 'src/training/train.py'
+        type: string
+      extra_args:
+        description: 'Additional arguments (e.g., --epochs 50 --batch-size 32)'
+        required: false
+        type: string
+      ray_resources:
+        description: 'Ray resource requirements (JSON)'
+        required: false
+        default: '{"num_cpus": 1, "memory": "2Gi"}'
+        type: string
+      experiment_name:
+        description: 'MLflow experiment name'
+        required: false
+        default: ${{ github.event.repository.name }}
 
 jobs:
- train:
-   name: 🏃 Run Training
-   runs-on: self-hosted-local  # Change to ubuntu-latest for production
-   steps:
-     - name: Install kubectl
-       run: |
-         curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-         chmod +x kubectl
-         sudo mv kubectl /usr/local/bin/
-
-     - name: Configure kubectl
-       run: |
-         mkdir -p ~/.kube
-         echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
-
-     - name: Submit Ray Job
-       run: |
-         cat <<EOF | kubectl apply -f -
-         apiVersion: ray.io/v1
-         kind: RayJob
-         metadata:
-           name: ${{ github.event.repository.name }}-${{ github.run_id }}
-           namespace: ai
-           labels:
-             repo: ${{ github.event.repository.name }}
-             run-id: "${{ github.run_id }}"
-         spec:
-           ttlSecondsAfterFinished: 300
-           rayClusterSpec:
-             rayVersion: "2.48.0"
-             headGroupSpec:
-               serviceType: ClusterIP
-               template:
-                 spec:
-                   containers:
-                   - name: ray-head
-                     image: opencloudhuborg/wine-classifier-training:latest
-                     resources:
-                       requests: ${{ fromJSON(inputs.ray_resources) }}
-                     env:
-                     - name: MLFLOW_TRACKING_URI
-                       value: http://mlflow.mlops.svc.cluster.local:5000
-                     - name: MLFLOW_EXPERIMENT_NAME
-                       value: ${{ inputs.experiment_name }}
-             workerGroupSpecs:
-             - replicas: 1
-               groupName: worker
-               template:
-                 spec:
-                   containers:
-                   - name: ray-worker
-                     image: opencloudhuborg/wine-classifier-training:latest
-                     resources:
-                       requests: ${{ fromJSON(inputs.ray_resources) }}
-           entrypoint: python ${{ inputs.script_path }} ${{ inputs.extra_args }}
-         EOF
+  train:
+    name: 🏃 Run Training
+    runs-on: self-hosted-local  # Change to ubuntu-latest for production
+    steps:
+      - name: Submit Ray Job
+        uses: Mitigram/gh-action-kubectl@master
+        with:
+          config: ${{ secrets.KUBE_CONFIG }}
+          args: |
+            apply -f - <<EOF
+            apiVersion: ray.io/v1
+            kind: RayJob
+            metadata:
+              name: ${{ github.event.repository.name }}-${{ github.run_id }}
+              namespace: ai
+              labels:
+                repo: ${{ github.event.repository.name }}
+                run-id: "${{ github.run_id }}"
+            spec:
+              ttlSecondsAfterFinished: 300
+              rayClusterSpec:
+                rayVersion: "2.48.0"
+                headGroupSpec:
+                  serviceType: ClusterIP
+                  template:
+                    spec:
+                      containers:
+                      - name: ray-head
+                        image: opencloudhuborg/wine-classifier-training:latest
+                        resources:
+                          requests: ${{ fromJSON(inputs.ray_resources) }}
+                        env:
+                        - name: MLFLOW_TRACKING_URI
+                          value: http://mlflow.mlops.svc.cluster.local:5000
+                        - name: MLFLOW_EXPERIMENT_NAME
+                          value: ${{ inputs.experiment_name }}
+                workerGroupSpecs:
+                - replicas: 1
+                  groupName: worker
+                  template:
+                    spec:
+                      containers:
+                      - name: ray-worker
+                        image: opencloudhuborg/wine-classifier-training:latest
+                        resources:
+                          requests: ${{ fromJSON(inputs.ray_resources) }}
+              entrypoint: python ${{ inputs.script_path }} ${{ inputs.extra_args }}
+            EOF
