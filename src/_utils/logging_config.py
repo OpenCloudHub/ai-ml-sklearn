@@ -2,6 +2,8 @@
 import logging
 import warnings
 
+import urllib3
+
 
 def setup_logging(level=logging.INFO, library_level=logging.WARNING):
     """
@@ -20,6 +22,10 @@ def setup_logging(level=logging.INFO, library_level=logging.WARNING):
     logging.getLogger("mlflow.sklearn").setLevel(library_level)
     logging.getLogger("mlflow.tracking").setLevel(library_level)
     logging.getLogger("mlflow.utils.autologging_utils").setLevel(library_level)
+
+    # Suppress urllib3 SSL warnings
+    logging.getLogger("urllib3").setLevel(logging.ERROR)
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     # Optuna logging
     import optuna

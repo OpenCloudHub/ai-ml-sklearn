@@ -5,6 +5,8 @@
 		"dockerfile": "../Dockerfile",
 		"target": "dev"
 	},
+	"workspaceMount": "source=${localWorkspaceFolder},target=/workspace/project,type=bind",
+	"workspaceFolder": "/workspace/project",
 	"runArgs": ["--env-file", "./.env", "--network", "host"],
 	"postCreateCommand": "pre-commit run --all",
 	"features": {

@@ -1,54 +1,77 @@
 name: 🤖 Train Wine Classifier
 
-# This workflow demonstrates MLflow integration with containerized training environments.
-# Code is mounted into containers at runtime to avoid rebuilds on every change.
-# The training image contains only the Python environment - source code comes from the repo.
-
 on:
   workflow_dispatch:
     inputs:
-      mlflow_command:
-        description: 'MLflow run command'
+      script_path:
+        description: 'Training script to run'
         required: true
-        default: 'mlflow run . --entry-point training'
+        default: 'src/train.py'
         type: string
+
+      extra_args:
+        description: 'Additional arguments (e.g., --epochs 50 --batch-size 32)'
+        required: false
+        type: string
+
+      ray_resources:
+        description: 'Ray resource requirements (JSON)'
+        required: false
+        default: '{"num_cpus": 1, "memory": "2Gi"}'
+        type: string
+
+      experiment_name:
+        description: 'MLflow experiment name'
+        required: false
+        default: ${{ github.event.repository.name }}
 
 env:
   MLFLOW_TRACKING_URI: "http://172.17.0.1:8081"
-  MLFLOW_EXPERIMENT_NAME: "wine-quality"
 
 jobs:
   train:
     name: 🏃 Run Training
     runs-on: self-hosted-local  # Use our runner for local testing
-    
+
     steps:
-      - name: 📦 Checkout code
-        uses: actions/checkout@v4
-      
-      - name: 🐍 Setup Python and install MLflow
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-      
-      - name: 📦 Install dependencies
+      - name: Submit Ray Job
         run: |
-          pip install uv
-          uv sync --dev
-      
-      - name: 🔐 Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_TOKEN }}
-      
-      - name: 🤖 Run MLflow command
-        run: |
-          source .venv/bin/activate
-          ${{ inputs.mlflow_command }}
-      
-      - name: 📊 Summary
-        run: |
-          echo "## 🤖 Training Complete!" >> $GITHUB_STEP_SUMMARY
-          echo "- **Command**: \`${{ inputs.mlflow_command }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **MLflow UI**: ${{ env.MLFLOW_TRACKING_URI }}" >> $GITHUB_STEP_SUMMARY
+          cat <<EOF | kubectl apply -f -
+          apiVersion: ray.io/v1
+          kind: RayJob
+          metadata:
+            name: ${{ github.event.repository.name }}-${{ github.run_id }}
+            namespace: ai
+            labels:
+              repo: ${{ github.event.repository.name }}
+              run-id: "${{ github.run_id }}"
+          spec:
+            # Ephemeral Ray cluster spec
+            rayClusterSpec:
+              rayVersion: "2.48.0"
+              headGroupSpec:
+                serviceType: ClusterIP
+                template:
+                  spec:
+                    containers:
+                    - name: ray-head
+                      image: ghcr.io/opencloudhub/${{ github.event.repository.name }}:${{ github.sha }}
+                      resources:
+                        requests: ${{ fromJSON(inputs.ray_resources) }}
+                      env:
+                      - name: MLFLOW_TRACKING_URI
+                        value: http://mlflow.mlops.svc.cluster.local:5000
+                      - name: MLFLOW_EXPERIMENT_NAME
+                        value: ${{ inputs.experiment_name }}
+              workerGroupSpecs:
+              - replicas: 1
+                groupName: worker
+                template:
+                  spec:
+                    containers:
+                    - name: ray-worker
+                      image: ghcr.io/opencloudhub/${{ github.event.repository.name }}:${{ github.sha }}
+                      resources:
+                        requests: ${{ fromJSON(inputs.ray_resources) }}
+            entrypoint: python ${{ inputs.script_path }} ${{ inputs.extra_args }}
+          EOF

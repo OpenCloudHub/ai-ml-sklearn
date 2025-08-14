@@ -8,12 +8,7 @@ on:
       - 'pyproject.toml'
       - 'uv.lock'
       - '.github/workflows/ci-build-training-image.yaml'
-  pull_request:
-    paths:
-      - 'Dockerfile'
-      - 'pyproject.toml'
-      - 'uv.lock'
-      - '.github/workflows/ci-build-training-image.yaml'
+      - 'src/**'
 
 jobs:
   docker-build:

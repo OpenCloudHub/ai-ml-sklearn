@@ -15,26 +15,8 @@
 <h1 align="center">Wine Classifier - MLOps Demo</h1>
 
 <p align="center">
-    Scikit-learn wine classification with complete MLOps pipeline featuring MLflow tracking, hyperparameter optimization, and production-ready deployment patterns.<br />
+    Scikit-learn wine classification with a modern MLOps pipeline featuring MLflow tracking, Ray for distributed training and serving, hyperparameter optimization, and production-ready deployment patterns.<br />
     <a href="https://github.com/opencloudhub"><strong>Explore OpenCloudHub »</strong></a>
-  </p>
-
-<p align="center">
-    <a href="https://github.com/opencloudhub/ai-ml-sklearn/graphs/contributors">
-      <img src="https://img.shields.io/github/contributors/opencloudhub/ai-ml-sklearn.svg?style=for-the-badge" alt="Contributors">
-    </a>
-    <a href="https://github.com/opencloudhub/ai-ml-sklearn/network/members">
-      <img src="https://img.shields.io/github/forks/opencloudhub/ai-ml-sklearn.svg?style=for-the-badge" alt="Forks">
-    </a>
-    <a href="https://github.com/opencloudhub/ai-ml-sklearn/stargazers">
-      <img src="https://img.shields.io/github/stars/opencloudhub/ai-ml-sklearn.svg?style=for-the-badge" alt="Stars">
-    </a>
-    <a href="https://github.com/opencloudhub/ai-ml-sklearn/issues">
-      <img src="https://img.shields.io/github/issues/opencloudhub/ai-ml-sklearn.svg?style=for-the-badge" alt="Issues">
-    </a>
-    <a href="https://github.com/opencloudhub/ai-ml-sklearn/blob/main/LICENSE">
-      <img src="https://img.shields.io/github/license/opencloudhub/ai-ml-sklearn.svg?style=for-the-badge" alt="License">
-    </a>
   </p>
 </div>
 
@@ -57,37 +39,34 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-<!-- # TODO: adjust readme -->
-
 <h2 id="about">🍷 About</h2>
 
-This repository demonstrates a complete MLOps pipeline for wine classification using scikit-learn and the UCI Wine dataset. It showcases production-ready machine learning practices including experiment tracking, hyperparameter optimization, model registration, and containerized deployment.
+This repository demonstrates a complete MLOps pipeline for wine classification using scikit-learn and the UCI Wine dataset. It showcases production-ready machine learning practices including experiment tracking, hyperparameter optimization, model registration, and containerized deployment.\
+**Ray** is used for distributed training and scalable model serving.
 
 **Key Technologies:**
 
 - **ML Framework**: Scikit-learn (Logistic Regression)
+- **Distributed Training & Serving**: Ray
 - **Experiment Tracking**: MLflow
 - **Hyperparameter Optimization**: Optuna
-- **Containerization**: Docker with multi-stage builds
-- **Dependency Management**: UV (fast Python package manager)
+- **Containerization**: Docker
+- **Dependency Management**: UV
 - **Development**: DevContainers for consistent environments
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ______________________________________________________________________
 
 <h2 id="features">✨ Features</h2>
 
-- 🔬 **Experiment Tracking**: Complete MLflow integration with model registry
+- 🔬 **Experiment Tracking**: MLflow integration with model registry
 - 🎯 **Hyperparameter Tuning**: Automated optimization using Optuna
 - 🐳 **Containerized Training**: Docker-based training environment
+- ⚡ **Distributed Training & Serving**: Ray for scalable workflows
 - 📊 **Model Evaluation**: Comprehensive metrics and visualization
 - 🚀 **CI/CD Ready**: GitHub Actions workflows for automated training
 - 📁 **MLflow Projects**: Standardized, reproducible ML workflows
 - 🔄 **Model Registration**: Threshold-based automatic model promotion
 - 🧪 **Development Environment**: VS Code DevContainer setup
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ______________________________________________________________________
 
@@ -98,6 +77,7 @@ ______________________________________________________________________
 - Docker and Docker Compose
 - VS Code with DevContainers extension (recommended)
 - MLflow tracking server (for remote tracking)
+- Ray (for distributed training/serving)
 
 ### Local Development
 
@@ -125,88 +105,76 @@ ______________________________________________________________________
    uv sync --dev
    ```
 
-### Quick Start
+______________________________________________________________________
+
+### MLflow Tracking Server
+
+Start MLflow locally (accessible from Docker containers):
 
 ```bash
-# Start Mlflow locally
 mlflow server --host 0.0.0.0 --port 8081
-
-# Export needed env variables
-export MLFLOW_TRACKING_URI=http://172.17.0.1:8081
+export MLFLOW_TRACKING_URI=http://0.0.0.0:8081
 export MLFLOW_EXPERIMENT_NAME=wine-quality
-
-# Run basic training
-uv run src/training.py
-
-# Run hyperparameter optimization
-uv run src/hyperparameter_tuning.py --n_trials 5
-
-# Using MLflow Project
-mlflow run . --entry-point training
-mlflow run . --entry-point hyperparameter_tuning -P n_trials=50
+export MLFLOW_TRACKING_INSECURE_TLS=true
 ```
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+______________________________________________________________________
+
+### Ray Development Workflow
+
+#### 1. Start a Local Ray Cluster
+
+```bash
+ray start --head
+export RAY_ADDRESS='http://127.0.0.1:8265'
+```
+
+#### 2. Training Workflows
+
+Submit Ray jobs for training and hyperparameter optimization:
+
+```bash
+RAY_ADDRESS='http://127.0.0.1:8265' ray job submit --working-dir . -- python src/training/train.py
+RAY_ADDRESS='http://127.0.0.1:8265' ray job submit --working-dir . -- python src/training/optimize_hyperparameters.py
+```
+
+#### 3. Model Serving with Ray Serve
+
+To run the model serving application locally:
+
+```bash
+serve run --working-dir /workspace/project src.serving.wine_classifier:deployment
+```
 
 ______________________________________________________________________
 
 <h2 id="usage">💻 Usage</h2>
 
-### Training Options
-
-**Basic Training:**
+#### Training
 
 ```bash
-python src/training.py --C 1.0 --max_iter 100 --solver lbfgs
+python src/training/train.py --C 1.0 --max_iter 100 --solver lbfgs
 ```
 
-**Hyperparameter Optimization:**
+#### Hyperparameter Optimization
 
 ```bash
-python src/hyperparameter_tuning.py --n_trials 50 --test_size 0.2
+python src/training/optimize_hyperparameters.py --n_trials 50 --test_size 0.2
 ```
 
-**MLflow Projects:**
+#### Local Model Serving
 
 ```bash
-# Training with parameters
-mlflow run . --entry-point training \
-  -P C=0.5 \
-  -P max_iter=200 \
-  -P solver=saga
-
-# Hyperparameter tuning
-mlflow run . --entry-point hyperparameter_tuning \
-  -P n_trials=100
+serve run --working-dir /workspace/project src.serving.wine_classifier:deployment
 ```
 
-### Model Registration
-
-Set environment variables for automatic model registration:
+To test the model, run:
 
 ```bash
-export MLFLOW_TRACKING_URI=http://172.17.0.1:8081
-export MLFLOW_EXPERIMENT_NAME=wine-quality
-export REGISTERED_MODEL_NAME="staging.wine_classifier"
-export REGISTERED_MODEL_THRESHOLD="0.85"
-
-python src/training.py
+python tests/test_wine_classifier.py
 ```
 
-### Docker Usage
-
-```bash
-# Build training image
-docker build --target prod -t wine-classifier .
-
-# Run training
-docker run --rm \
-  -v $(pwd):/mlflow/projects/code \
-  -e MLFLOW_TRACKING_URI=http://host.docker.internal:5000 \
-  wine-classifier python src/training.py
-```
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+You can also visit the Swagger documentetion of the Application at `http://localhost:8000/docs`
 
 ______________________________________________________________________
 
@@ -214,56 +182,52 @@ ______________________________________________________________________
 
 ```
 ai-ml-sklearn/
-├── notebooks/
-│   └── exploring_wine_dataset.ipynb    # Data exploration
 ├── src/
-│   ├── training.py                     # Main training script
-│   ├── hyperparameter_tuning.py       # Optuna optimization
-│   ├── evaluate.py                     # Model evaluation utilities
-│   └── _utils/
-│       ├── get_or_create_experiment.py # MLflow experiment management
-│       ├── logging_callback.py         # Optuna logging callbacks
-│       └── logging_config.py           # Logging configuration
+│   ├── training/                       # Training and optimization scripts
+│   │   ├── train.py
+│   │   ├── optimize_hyperparameters.py
+│   │   └── evaluate.py
+│   ├── serving/                        # Model serving (Ray Serve/FastAPI)
+│   │   └── wine_classifier.py
+│   └── _utils/                         # Shared utilities
+│       ├── get_or_create_experiment.py
+│       ├── logging_callback.py
+│       └── logging_config.py
 ├── tests/                              # Unit tests
 ├── .devcontainer/                      # VS Code DevContainer config
 ├── .github/workflows/                  # CI/CD workflows
 ├── Dockerfile                          # Multi-stage container build
 ├── MLproject                           # MLflow project definition
 ├── pyproject.toml                      # Project dependencies and config
-└── uv.lock                            # Dependency lock file
+└── uv.lock                             # Dependency lock file
 ```
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ______________________________________________________________________
 
 <h2 id="mlops-pipeline">🔄 MLOps Pipeline</h2>
 
-### 1. Development & Experimentation
+1. **Development & Experimentation**
 
-- Local development in DevContainers
-- Jupyter notebooks for data exploration
-- MLflow experiment tracking
+   - Local development in DevContainers
+   - Jupyter notebooks for data exploration
+   - MLflow experiment tracking
 
-### 2. Training & Optimization
+1. **Training & Optimization**
 
-- Automated hyperparameter tuning with Optuna
-- Model evaluation and metrics logging
-- Threshold-based model registration
+   - Distributed training and hyperparameter tuning with Ray and Optuna
+   - Model evaluation and metrics logging
+   - Threshold-based model registration
 
-### 3. Model Registry
+1. **Model Registry**
 
-- Automatic promotion to staging registry
-- Model versioning and lineage tracking
-- Performance comparison and rollback capability
+   - Automatic promotion to staging registry
+   - Model versioning and lineage tracking
+   - Performance comparison and rollback capability
 
-### 4. Deployment (Planned)
+1. **Deployment**
 
-- KServe model serving integration
-- GitOps-based deployment automation
-- Monitoring and drift detection
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+   - Ray Serve for scalable, production-ready model serving
+   - (Planned) KServe integration and GitOps-based deployment automation
 
 ______________________________________________________________________
 
@@ -273,15 +237,11 @@ Contributions are welcome! This project follows OpenCloudHub's contribution stan
 
 Please see our [Contributing Guidelines](https://github.com/opencloudhub/.github/blob/main/.github/CONTRIBUTING.md) and [Code of Conduct](https://github.com/opencloudhub/.github/blob/main/.github/CODE_OF_CONDUCT.md) for more details.
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 ______________________________________________________________________
 
 <h2 id="license">📄 License</h2>
 
 Distributed under the Apache 2.0 License. See [LICENSE](LICENSE) for more information.
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ______________________________________________________________________
 
@@ -291,8 +251,6 @@ Organization Link: [https://github.com/OpenCloudHub](https://github.com/OpenClou
 
 Project Link: [https://github.com/opencloudhub/ai-ml-sklearn](https://github.com/opencloudhub/ai-ml-sklearn)
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 ______________________________________________________________________
 
 <h2 id="acknowledgements">🙏 Acknowledgements</h2>
@@ -300,6 +258,7 @@ ______________________________________________________________________
 - [UCI Wine Dataset](https://archive.ics.uci.edu/ml/datasets/wine) - The dataset used for classification
 - [MLflow](https://mlflow.org/) - ML lifecycle management
 - [Optuna](https://optuna.org/) - Hyperparameter optimization framework
+- [Ray](https://ray.io/) - Distributed computing and serving
 - [UV](https://github.com/astral-sh/uv) - Fast Python package manager
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>

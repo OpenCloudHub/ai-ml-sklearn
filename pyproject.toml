@@ -1,12 +1,14 @@
 [project]
 name = "ai-ml-sklearn"
 version = "0.1.0"
-description = "Add your description here"
+description = "Example model training and serving with ray, mlflow, sklearn and fastapi"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
+    "fastapi>=0.116.1",
     "mlflow>=3.2.0",
     "optuna>=4.4.0",
+    "ray[default,serve]>=2.48.0",
     "scikit-learn>=1.7.1",
     "seaborn>=0.13.2",
     "shap>=0.48.0",

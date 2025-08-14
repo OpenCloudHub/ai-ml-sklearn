@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 #==============================================================================#
 # Build arguments
-ARG PYTHON_VERSION=3.13
+ARG PYTHON_VERSION=3.12
 ARG UV_VERSION=0.5.19
 
 #==============================================================================#
@@ -16,15 +16,15 @@ FROM python:${PYTHON_VERSION}-slim-bookworm AS base
 COPY --from=uv /uv /uvx /bin/
 
 # Set working directory
-WORKDIR /mlflow/projects/code
+WORKDIR /workspace/project
 
 # Environment variables for UV and Python
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PATH="/mlflow/projects/code/.venv/bin:$PATH" \
-    PYTHONPATH="/mlflow/projects/code"
+    PATH="/workspace/project/.venv/bin:$PATH" \
+    PYTHONPATH="/workspace/project:/workspace/project/src"
 
 # Install system dependencies
 RUN apt-get update && \
@@ -60,14 +60,15 @@ COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev
 
-# Create non-root user
-RUN useradd -m -u 1000 mlflow
+# Copy only necessary source code
+COPY src/ ./src/
 
-# Change ownership of dependency files only
-RUN chown -R mlflow:mlflow pyproject.toml uv.lock
+# Create a non-root user for running the app and change ownership of project files
+RUN useradd -m -u 1001 rayuser && \
+    chown -R rayuser:rayuser /workspace/project
 
 # Switch to non-root user for runtime
-USER mlflow
+USER rayuser
 
 # Set environment for production
 ENV ENVIRONMENT=production

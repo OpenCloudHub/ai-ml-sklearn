@@ -8,8 +8,7 @@ import mlflow
 import optuna
 
 from _utils.get_or_create_experiment import get_or_create_experiment
-from _utils.logging_callback import champion_callback
-from training import load_data, train_and_evaluate
+from training.train import load_data, train_and_evaluate
 
 logger = logging.getLogger("mlflow")
 
@@ -47,28 +46,39 @@ def objective(
             max_iter = trial.suggest_int("max_iter", 100, 1000)
             solver = trial.suggest_categorical("solver", ["lbfgs", "liblinear", "saga"])
 
-            # Train and evaluate with autolog disabled for trials (cleaner logs)
-            # Only log model for the best trial later
-            result, accuracy, _ = train_and_evaluate(
-                X_train=X_train,
-                X_test=X_test,
-                y_train=y_train,
-                y_test=y_test,
-                eval_data=eval_data,
-                C=C,
-                max_iter=max_iter,
-                solver=solver,
-                random_state=random_state,  # Fixed for reproducibility
-                log_model=False,  # Don't log model for every trial
+            # Train and evaluate
+            result, model_uri, pipeline = (
+                train_and_evaluate(  # <-- Note: 3 return values
+                    X_train=X_train,
+                    X_test=X_test,
+                    y_train=y_train,
+                    y_test=y_test,
+                    eval_data=eval_data,
+                    C=C,
+                    max_iter=max_iter,
+                    solver=solver,
+                    random_state=random_state,
+                    log_model=False,
+                )
             )
+
+            # Extract accuracy from result or use a default
+            if result and result.metrics:
+                accuracy = result.metrics.get("accuracy_score", 0.0)
+            else:
+                # Fallback: calculate accuracy directly
+                from sklearn.metrics import accuracy_score
+
+                y_pred = pipeline.predict(X_test)
+                accuracy = accuracy_score(y_test, y_pred)
 
             # Log trial-specific metric
             mlflow.log_metric("trial_accuracy", accuracy)
 
-            return accuracy
+            return accuracy  # Return the actual accuracy value
+
     except Exception as e:
         logger.error(f"Trial {trial.number} failed: {e}")
-        # Return worst possible score for failed trials
         return 0.0
 
 
@@ -76,12 +86,13 @@ def hyperparameter_search(n_trials, test_size, random_state):
     """
     Run hyperparameter optimization using Optuna with proper parent-child relationship.
     """
+
     # Set the current active MLflow experiment
     experiment_name = os.getenv("MLFLOW_EXPERIMENT_NAME", "Wine Classification")
     experiment_id = get_or_create_experiment(experiment_name)
 
     timestamp = datetime.now()
-    run_name = f"optuna_wine_{timestamp.strftime('%Y%m%d_%H%M%S')}"
+    run_name = f"optuna_optimization_{timestamp.strftime('%Y%m%d_%H%M%S')}"
 
     # Start parent run and capture its ID
     with mlflow.start_run(run_name=run_name, experiment_id=experiment_id) as parent_run:
@@ -136,13 +147,11 @@ def hyperparameter_search(n_trials, test_size, random_state):
             sampler=optuna.samplers.TPESampler(seed=random_state),
         )
 
-        # Run optimization
-        logger.info(f"Starting hyperparameter search with {n_trials} trials...")
+        logger.info("Running local optimization")
         study.optimize(
             objective_with_context,
             n_trials=n_trials,
-            n_jobs=1,  # Use single job to ensure proper parent-child relationship
-            callbacks=[champion_callback] if champion_callback else [],
+            n_jobs=1,  # Single job for proper parent-child relationship
             show_progress_bar=True,
         )
 
@@ -205,7 +214,7 @@ def parse_arguments():
         description="Hyperparameter tuning for wine classifier"
     )
     parser.add_argument(
-        "--n_trials", type=int, default=10, help="Number of optimization trials"
+        "--n_trials", type=int, default=5, help="Number of optimization trials"
     )
     parser.add_argument("--test_size", type=float, default=0.2, help="Test set size")
     parser.add_argument("--random_state", type=int, default=42, help="Random seed")
