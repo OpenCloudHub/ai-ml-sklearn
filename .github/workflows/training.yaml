@@ -28,9 +28,10 @@ jobs:
     runs-on: self-hosted-local  # Change to ubuntu-latest for production
     steps:
       - name: Submit Ray Job
-        uses: Mitigram/gh-action-kubectl@main
+        uses: actions-hub/kubectl@master
         with:
-          config: ${{ secrets.KUBE_CONFIG }}
+          env:
+            KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
           args: |
             apply -f - <<EOF
             apiVersion: ray.io/v1
