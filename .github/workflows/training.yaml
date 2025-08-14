@@ -29,9 +29,9 @@ jobs:
     steps:
       - name: Submit Ray Job
         uses: actions-hub/kubectl@master
-        with:
-          env:
+        env:
             KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+        with:
           args: |
             apply -f - <<EOF
             apiVersion: ray.io/v1
