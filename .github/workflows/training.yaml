@@ -1,4 +1,4 @@
-name: 🍷 Train Wine Classifier
+name: 🍷 Train Wine Classifier OLd
 
 on:
   workflow_dispatch:

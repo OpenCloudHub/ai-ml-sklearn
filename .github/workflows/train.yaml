@@ -32,7 +32,7 @@ on:
 jobs:
   train:
     name: 🍷 Wine Classifier Training
-    uses: opencloudhuborg/.github/.github/workflows/ray-training.yml@main
+    uses: opencloudhuborg/.github/.github/workflows/shared-training-ray.yaml@main
     with:
       compute_type: ${{ inputs.compute_type }}
       docker_image: "opencloudhuborg/wine-classifier-training:latest"
