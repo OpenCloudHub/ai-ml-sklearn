@@ -20,7 +20,7 @@ on:
      experiment_name:
        description: 'MLflow experiment name'
        required: false
-       default: ${{ github.event.repository.name }}
+       default: wine-quality
 
 jobs:
  train:
