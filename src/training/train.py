@@ -203,6 +203,24 @@ def main():
             log_model=True,
         )
 
+        # Register the model only if MLFLOW_REGISTERED_MODEL_NAME is set
+        registered_model_name = os.getenv("MLFLOW_REGISTERED_MODEL_NAME")
+        if registered_model_name:
+            run_id = mlflow.active_run().info.run_id
+            model_uri = f"runs:/{run_id}/model"
+
+            try:
+                mlflow.register_model(model_uri, registered_model_name)
+                logger.info(
+                    f"Model registered successfully as '{registered_model_name}'"
+                )
+            except Exception as e:
+                logger.warning(f"Could not register model: {e}")
+        else:
+            logger.info(
+                "MLFLOW_REGISTERED_MODEL_NAME not set - skipping model registration"
+            )
+
         if result:
             logger.info(f"Training completed. Final metrics: {result.metrics}")
             print(f"🎉 Job completed! Model URI: {model_uri}")

@@ -189,15 +189,23 @@ def hyperparameter_search(n_trials, test_size, random_state):
                 log_model=True,  # Log the final model
             )
 
-            # Register the best model
-            run_id = mlflow.active_run().info.run_id
-            model_uri = f"runs:/{run_id}/model"
+            # Register the model only if MLFLOW_REGISTERED_MODEL_NAME is set
+            registered_model_name = os.getenv("MLFLOW_REGISTERED_MODEL_NAME")
+            if registered_model_name:
+                run_id = mlflow.active_run().info.run_id
+                model_uri = f"runs:/{run_id}/model"
 
-            try:
-                mlflow.register_model(model_uri, "wine_classifier_best")
-                logger.info("Model registered successfully")
-            except Exception as e:
-                logger.warning(f"Could not register model: {e}")
+                try:
+                    mlflow.register_model(model_uri, registered_model_name)
+                    logger.info(
+                        f"Model registered successfully as '{registered_model_name}'"
+                    )
+                except Exception as e:
+                    logger.warning(f"Could not register model: {e}")
+            else:
+                logger.info(
+                    "MLFLOW_REGISTERED_MODEL_NAME not set - skipping model registration"
+                )
 
             if result:
                 logger.info(f"Final model evaluation metrics: {result.metrics}")
