@@ -56,3 +56,6 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY src/ ./src/
 
 ENV ENVIRONMENT=production
+
+# Activate virtual env
+ENV PATH="/workspace/project/.venv/bin:$PATH"
