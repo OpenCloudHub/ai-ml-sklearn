@@ -48,16 +48,11 @@ FROM rayproject/ray:${RAY_VERSION}-${RAY_PY_TAG} AS prod
 
 WORKDIR /workspace/project
 
-COPY --from=uv /uv /uvx /bin/
+COPY --from=uv /usr/local/bin/uv /usr/local/bin/uv
 COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev
 
 COPY src/ ./src/
-
-RUN useradd -m -u 1001 rayuser && \
-    chown -R rayuser:rayuser /workspace/project
-
-USER rayuser
 
 ENV ENVIRONMENT=production
