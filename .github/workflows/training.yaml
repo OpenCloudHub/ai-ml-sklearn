@@ -47,12 +47,15 @@ jobs:
           ~/.local/bin/kubectl cluster-info
 
       - name: Submit Ray Job
+        id: submit
         run: |
+          JOB_NAME=${{ github.event.repository.name }}-${{ github.run_id }}
+          
           cat <<EOF | ~/.local/bin/kubectl apply -f -
           apiVersion: ray.io/v1
           kind: RayJob
           metadata:
-            name: ${{ github.event.repository.name }}-${{ github.run_id }}
+            name: ${JOB_NAME}
             namespace: ai
             labels:
               repo: ${{ github.event.repository.name }}
@@ -92,3 +95,62 @@ jobs:
                           memory: "${{ inputs.memory }}"
             entrypoint: python ${{ inputs.script_path }} ${{ inputs.extra_args }}
           EOF
+          
+          echo "job_name=${JOB_NAME}" >> $GITHUB_OUTPUT
+
+      - name: 📊 Provide Debug Commands
+        run: |
+          JOB_NAME=${{ steps.submit.outputs.job_name }}
+          
+          echo "========================================="
+          echo "🚀 RAY JOB SUBMITTED: ${JOB_NAME}"
+          echo "========================================="
+          echo ""
+          echo "📋 COMMANDS FOR DATA SCIENTISTS:"
+          echo ""
+          echo "1️⃣ Check job status:"
+          echo "   kubectl get rayjob -n ai ${JOB_NAME}"
+          echo ""
+          echo "2️⃣ Watch job logs (real-time):"
+          echo "   kubectl logs -n ai -l job-name=${JOB_NAME} -f"
+          echo ""
+          echo "3️⃣ Access Ray Dashboard (while job runs):"
+          echo "   kubectl port-forward -n ai svc/${JOB_NAME}-head-svc 8265:8265"
+          echo "   Then open: http://localhost:8265"
+          echo ""
+          echo "4️⃣ Get Python script output:"
+          echo "   kubectl logs -n ai \$(kubectl get pods -n ai -l job-name=${JOB_NAME} -o jsonpath='{.items[0].metadata.name}')"
+          echo ""
+          echo "5️⃣ Debug if job fails:"
+          echo "   kubectl describe rayjob -n ai ${JOB_NAME}"
+          echo "   kubectl describe pods -n ai -l ray.io/cluster=${JOB_NAME}"
+          echo ""
+          echo "========================================="
+
+      - name: 🔍 Monitor Job Status
+        run: |
+          JOB_NAME=${{ steps.submit.outputs.job_name }}
+          
+          echo "Monitoring job execution..."
+          for i in {1..60}; do
+            STATUS=$(~/.local/bin/kubectl get rayjob -n ai ${JOB_NAME} -o jsonpath='{.status.jobStatus}' 2>/dev/null || echo "PENDING")
+            DEPLOYMENT_STATUS=$(~/.local/bin/kubectl get rayjob -n ai ${JOB_NAME} -o jsonpath='{.status.jobDeploymentStatus}' 2>/dev/null || echo "Initializing")
+            
+            echo "[$i/60] Job Status: $STATUS | Deployment: $DEPLOYMENT_STATUS"
+            
+            if [[ "$STATUS" == "SUCCEEDED" ]]; then
+              echo "✅ Job completed successfully!"
+              break
+            elif [[ "$STATUS" == "FAILED" ]]; then
+              echo "❌ Job failed! Getting logs..."
+              ~/.local/bin/kubectl logs -n ai -l job-name=${JOB_NAME} --tail=100
+              ~/.local/bin/kubectl describe rayjob -n ai ${JOB_NAME}
+              exit 1
+            fi
+            
+            sleep 10
+          done
+          
+          # Final log retrieval
+          echo "=== FINAL JOB OUTPUT ==="
+          ~/.local/bin/kubectl logs -n ai -l job-name=${JOB_NAME} --tail=200
