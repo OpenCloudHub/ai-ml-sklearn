@@ -12,10 +12,15 @@ on:
         description: 'Additional arguments (e.g., --epochs 50 --batch-size 32)'
         required: false
         type: string
-      ray_resources:
-        description: 'Ray resource requirements (JSON)'
+      num_cpus:
+        description: 'Number of CPUs'
         required: false
-        default: '{"num_cpus": 1, "memory": "2Gi"}'
+        default: '1'
+        type: string
+      memory:
+        description: 'Memory (e.g., 2Gi)'
+        required: false
+        default: '2Gi'
         type: string
       experiment_name:
         description: 'MLflow experiment name'
@@ -64,7 +69,9 @@ jobs:
                     - name: ray-head
                       image: opencloudhuborg/wine-classifier-training:latest
                       resources:
-                        requests: ${{ fromJSON(inputs.ray_resources) }}
+                        requests:
+                          cpu: "${{ inputs.num_cpus }}"
+                          memory: "${{ inputs.memory }}"
                       env:
                       - name: MLFLOW_TRACKING_URI
                         value: http://mlflow.mlops.svc.cluster.local:5000
@@ -79,6 +86,8 @@ jobs:
                     - name: ray-worker
                       image: opencloudhuborg/wine-classifier-training:latest
                       resources:
-                        requests: ${{ fromJSON(inputs.ray_resources) }}
+                        requests:
+                          cpu: "${{ inputs.num_cpus }}"
+                          memory: "${{ inputs.memory }}"
             entrypoint: python ${{ inputs.script_path }} ${{ inputs.extra_args }}
           EOF
