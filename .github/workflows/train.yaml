@@ -1,0 +1,42 @@
+name: 🍷 Train Wine Classifier
+
+on:
+  workflow_dispatch:
+    inputs:
+      compute_type:
+        description: 'Compute configuration'
+        required: true
+        type: choice
+        options:
+          - 'cpu-light'
+          - 'cpu-medium' 
+          - 'cpu-heavy'
+          - 'gpu-small'
+          - 'gpu-medium'
+        default: 'cpu-medium'
+      entrypoint:
+        description: 'Training script entrypoint'
+        required: true
+        default: 'python src/training/train.py'
+        type: string
+      extra_args:
+        description: 'Additional arguments (e.g., --epochs 50 --batch-size 32)'
+        required: false
+        type: string
+      experiment_name:
+        description: 'MLflow experiment name'
+        required: false
+        default: wine-quality
+        type: string
+
+jobs:
+  train:
+    name: 🍷 Wine Classifier Training
+    uses: opencloudhuborg/.github/.github/workflows/ray-training.yml@main
+    with:
+      compute_type: ${{ inputs.compute_type }}
+      docker_image: "opencloudhuborg/wine-classifier-training:latest"
+      entrypoint: ${{ inputs.entrypoint }}
+      extra_args: ${{ inputs.extra_args }}
+      experiment_name: ${{ inputs.experiment_name }}
+    secrets: inherit
