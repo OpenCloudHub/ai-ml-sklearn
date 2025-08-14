@@ -139,6 +139,7 @@ RAY_ADDRESS='http://127.0.0.1:8265' ray job submit --working-dir . -- python src
 
 #### 3. Model Serving with Ray Serve
 
+Make sure you have promoted a model to prod.wine-classifier with @champion alias, as service is looking for that
 To run the model serving application locally:
 
 ```bash

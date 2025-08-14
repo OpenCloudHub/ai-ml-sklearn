@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.116.1",
+    "joblib>=1.5.1",
     "mlflow>=3.2.0",
     "optuna>=4.4.0",
     "ray[default,serve]>=2.48.0",

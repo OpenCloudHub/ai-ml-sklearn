@@ -48,11 +48,14 @@ class WineClassifier:
         set_tracking_uri(mlflow_uri)
 
         # Load model from MLflow
-        model_version = client.get_model_version_by_alias(model_name, model_alias)
-        model_uri = f"models:/{model_name}@{model_alias}"
-        self.model = mlflow.sklearn.load_model(model_uri)
-        self.model_name = model_name
-        self.model_version = model_version.version
+        try:
+            model_version = client.get_model_version_by_alias(model_name, model_alias)
+            model_uri = f"models:/{model_name}@{model_alias}"
+            self.model = mlflow.sklearn.load_model(model_uri)
+            self.model_name = model_name
+            self.model_version = model_version.version
+        except Exception as e:
+            print(f"Error loading model: {e}")
 
     @app.get("/", summary="Health Check")
     async def root(self):
