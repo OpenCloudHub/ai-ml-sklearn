@@ -8,11 +8,11 @@ on:
         required: true
         type: choice
         options:
-          - 'cpu-light'
-          - 'cpu-medium' 
-          - 'cpu-heavy'
-          - 'gpu-small'
-          - 'gpu-medium'
+          - 'cpu-light'      # 1 worker, 1 CPU, 2Gi RAM
+          - 'cpu-medium'     # 1 worker, 2 CPU, 4Gi RAM
+          - 'cpu-heavy'      # 2 workers, 2 CPU, 4Gi RAM each
+          - 'gpu-small'      # 1 GPU worker, 2 CPU, 8Gi RAM, 1 GPU
+          - 'gpu-medium'     # 1 GPU worker, 4 CPU, 16Gi RAM, 1 GPU
         default: 'cpu-medium'
       entrypoint:
         description: 'Training script entrypoint'
@@ -31,7 +31,7 @@ on:
 
 jobs:
   train:
-    name: 🍷 Wine Classifier Training
+    name: Wine Classifier Training
     uses: opencloudhub/.github/.github/workflows/shared-training-ray.yaml@main
     with:
       compute_type: ${{ inputs.compute_type }}
