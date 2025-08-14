@@ -78,7 +78,7 @@ jobs:
                           memory: "${{ inputs.memory }}"
                       env:
                       - name: MLFLOW_TRACKING_URI
-                        value: http://mlflow.mlops.svc.cluster.local:5000
+                        value: http://mlflow-tracking.ai.svc.cluster.local
                       - name: MLFLOW_EXPERIMENT_NAME
                         value: ${{ inputs.experiment_name }}
               workerGroupSpecs:
