@@ -55,7 +55,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 COPY src/ ./src/
 
-ENV ENVIRONMENT=production
-
-# Activate virtual env
-ENV PATH="/workspace/project/.venv/bin:$PATH"
+ENV VIRTUAL_ENV="/workspace/project/.venv" \
+    PATH="/workspace/project/.venv/bin:$PATH" \
+    PYTHONPATH="/workspace/project/src" \
+    ENVIRONMENT=production
