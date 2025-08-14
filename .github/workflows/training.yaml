@@ -27,9 +27,23 @@ jobs:
     name: 🏃 Run Training
     runs-on: self-hosted-local  # Change to ubuntu-latest for production
     steps:
-      - name: Create RayJob manifest
+      - name: Install kubectl
         run: |
-          cat > /tmp/rayjob.yaml <<EOF
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          mkdir -p ~/.local/bin
+          mv kubectl ~/.local/bin/
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          
+      - name: Configure kubectl
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+          ~/.local/bin/kubectl cluster-info
+
+      - name: Submit Ray Job
+        run: |
+          cat <<EOF | ~/.local/bin/kubectl apply -f -
           apiVersion: ray.io/v1
           kind: RayJob
           metadata:
@@ -68,10 +82,3 @@ jobs:
                         requests: ${{ fromJSON(inputs.ray_resources) }}
             entrypoint: python ${{ inputs.script_path }} ${{ inputs.extra_args }}
           EOF
-
-      - name: Submit Ray Job
-        uses: actions-hub/kubectl@master
-        env:
-            KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
-        with:
-          args: apply -f /tmp/rayjob.yaml
