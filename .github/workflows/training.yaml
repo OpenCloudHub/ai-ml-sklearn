@@ -58,6 +58,7 @@ jobs:
               repo: ${{ github.event.repository.name }}
               run-id: "${{ github.run_id }}"
           spec:
+            shutdownAfterJobFinishes: true
             ttlSecondsAfterFinished: 300
             rayClusterSpec:
               rayVersion: "2.48.0"
