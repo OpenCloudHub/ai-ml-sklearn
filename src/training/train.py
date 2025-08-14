@@ -20,8 +20,9 @@ from _utils.get_or_create_experiment import get_or_create_experiment
 from _utils.logging_config import setup_logging
 
 # Set up ray
+# Always use 'auto' - works everywhere
+ray.init(address="auto", ignore_reinit_error=True)
 register_ray()
-ray.init()
 
 
 logger = setup_logging()
