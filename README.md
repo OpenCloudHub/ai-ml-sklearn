@@ -41,7 +41,7 @@ ______________________________________________________________________
 
 <h2 id="about">🍷 About</h2>
 
-This repository demonstrates a complete MLOps pipeline for wine classification using scikit-learn and the UCI Wine dataset. It showcases production-ready machine learning practices including experiment tracking, hyperparameter optimization, model registration, and containerized deployment.\
+This repository demonstrates an example implementation for wine classification using scikit-learn and the UCI Wine dataset. It showcases production-ready machine learning practices including experiment tracking, hyperparameter optimization, model registration, and containerized deployment and serves as demonstration within the OpenCloudHub project.\
 **Ray** is used for distributed training and scalable model serving.
 
 **Key Technologies:**
@@ -74,108 +74,88 @@ ______________________________________________________________________
 
 ### Prerequisites
 
-- Docker and Docker Compose
+- Docker
 - VS Code with DevContainers extension (recommended)
-- MLflow tracking server (for remote tracking)
-- Ray (for distributed training/serving)
 
-### Local Development
+### Setup
 
 1. **Clone the repository**
-
-   ```bash
+```bash
    git clone https://github.com/opencloudhub/ai-ml-sklearn.git
    cd ai-ml-sklearn
-   ```
+```
 
-1. **Open in DevContainer** (Recommended)
-
-   ```bash
+2. **Open in DevContainer** (Recommended)
+```bash
    code .
-   # VS Code will prompt to reopen in container
-   ```
+```
 
-1. **Or setup locally**
+   Then open in DevContainer: `Ctrl+Shift+P` → `Dev Containers: Rebuild and Reopen in Container`
 
-   ```bash
+   Or **setup locally without DevContainer**:
+```bash
    # Install UV
    curl -LsSf https://astral.sh/uv/install.sh | sh
 
    # Install dependencies
    uv sync --dev
-   ```
-
-______________________________________________________________________
-
-### MLflow Tracking Server
-
-Start MLflow locally (accessible from Docker containers):
-
-```bash
-mlflow server --host 0.0.0.0 --port 8081
-export MLFLOW_TRACKING_URI=http://0.0.0.0:8081
-export MLFLOW_EXPERIMENT_NAME=wine-quality
-export MLFLOW_TRACKING_INSECURE_TLS=true
 ```
 
-______________________________________________________________________
-
-### Ray Development Workflow
-
-#### 1. Start a Local Ray Cluster
-
+3. **Start MLflow tracking server**
 ```bash
-ray start --head
+   mlflow server --host 0.0.0.0 --port 8081
 ```
 
-#### 2. Training Workflows
+   Access at `http://localhost:8081`
 
-Submit Ray jobs for training and hyperparameter optimization:
-
+4. **Start local Ray cluster**
 ```bash
-RAY_ADDRESS='http://127.0.0.1:8265' ray job submit --working-dir . -- python src/training/train.py
-RAY_ADDRESS='http://127.0.0.1:8265' ray job submit --working-dir . -- python src/training/optimize_hyperparameters.py
+   ray start --head
 ```
 
-#### 3. Model Serving with Ray Serve
+   Access dashboard at `http://127.0.0.1:8265`
 
-Make sure you have promoted a model to prod.wine-classifier with @champion alias, as service is looking for that
-To run the model serving application locally:
-
-```bash
-serve run --working-dir /workspace/project src.serving.wine_classifier:deployment
-```
+You're now ready to train and serve models!
 
 ______________________________________________________________________
 
 <h2 id="usage">💻 Usage</h2>
 
-#### Training
+### Training
 
+**Basic training:**
 ```bash
 python src/training/train.py --C 1.0 --max_iter 100 --solver lbfgs
 ```
+or 
+```bash
+RAY_ADDRESS='http://127.0.0.1:8265' ray job submit --working-dir . -- python src/training/train.py
+```
 
-#### Hyperparameter Optimization
-
+**Hyperparameter optimization:**
 ```bash
 python src/training/optimize_hyperparameters.py --n_trials 50 --test_size 0.2
 ```
 
-#### Local Model Serving
+### Model Serving
 
+Ensure you have a model registered in MLflow with the `@champion` alias.
+
+**Start the serving application:**
 ```bash
-serve run --working-dir /workspace/project src.serving.wine_classifier:deployment
+serve run src.serving.wine_classifier:deployment
 ```
 
-To test the model, run:
+Access Swagger docs at `http://localhost:8000/docs`
 
+### Testing
+
+**Test the deployed endpoint:**
 ```bash
 python tests/test_wine_classifier.py
 ```
 
-You can also visit the Swagger documentetion of the Application at `http://localhost:8000/docs`
-
+Or use the interactive Swagger UI at `http://localhost:8000/docs`
 ______________________________________________________________________
 
 <h2 id="project-structure">📁 Project Structure</h2>

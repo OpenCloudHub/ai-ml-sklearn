@@ -25,6 +25,7 @@ ENV UV_COMPILE_BYTECODE=1 \
     PATH="/workspace/project/.venv/bin:$PATH" \
     PYTHONPATH="/workspace/project:/workspace/project/src"
 
+# Install system dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     build-essential \
@@ -37,6 +38,8 @@ RUN apt-get update && \
 FROM uv AS dev
 
 COPY pyproject.toml uv.lock ./
+
+# Install development dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --no-install-project --dev
 
@@ -50,6 +53,8 @@ WORKDIR /workspace/project
 
 COPY --from=uv /usr/local/bin/uv /usr/local/bin/uv
 COPY pyproject.toml uv.lock ./
+
+# Install production dependencies only
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev
 

@@ -1,11 +1,17 @@
+# src/serving/wine_classifier.py
 import os
 from typing import List
 
+import mlflow.tracking._tracking_service.client
 import numpy as np
 from fastapi import FastAPI
 from mlflow import MlflowClient, set_tracking_uri
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from ray import serve
+
+from _utils.logging_config import setup_logging
+
+logger = setup_logging()
 
 # FastAPI app
 app = FastAPI(
@@ -15,35 +21,86 @@ app = FastAPI(
 )
 
 
-# Pydantic models for request/response
+# Pydantic models for request/response validation
 class WineFeatures(BaseModel):
-    features: List[List[float]]
+    """Input features for wine classification"""
+
+    features: List[List[float]] = Field(
+        ...,
+        description="List of wine feature vectors. Each vector should contain 13 float values.",
+        example=[
+            [
+                13.2,
+                2.77,
+                2.51,
+                18.5,
+                1015.0,
+                2.95,
+                3.33,
+                0.29,
+                10.2,
+                0.56,
+                1.68,
+                5.0,
+                1.04,
+            ],
+            [
+                12.37,
+                1.17,
+                1.92,
+                19.6,
+                162.0,
+                1.45,
+                2.52,
+                0.24,
+                11.8,
+                0.61,
+                1.65,
+                3.8,
+                0.61,
+            ],
+        ],
+    )
 
 
 class PredictionResponse(BaseModel):
-    predictions: List[int]
+    """Response model for predictions"""
+
+    predictions: List[int] = Field(
+        ..., description="Predicted wine classes for the input features"
+    )
     model_name: str
     model_version: str
 
 
-@serve.deployment(num_replicas=1)
+@serve.deployment(
+    # Example autoscaling configuration
+    # autoscaling_config={
+    #     "min_replicas": 1,
+    #     "max_replicas": 10,
+    #     "target_num_ongoing_requests_per_replica": 5,  # Scale when avg requests > 5
+    # }
+)
 @serve.ingress(app)
 class WineClassifier:
-    def __init__(
-        self, model_name: str = "prod.wine-classifier", model_alias: str = "champion"
-    ):
+    """Wine Classifier API using MLflow model
+
+    Loads a wine classification model from MLflow and provides prediction endpoints.
+    """
+
+    def __init__(self, model_name: str | None = None, model_alias: str | None = None):
         client = MlflowClient()
 
         # Set MLflow tracking URI
         mlflow_uri = os.getenv(
             "MLFLOW_TRACKING_URI", "https://mlflow.ai.internal.opencloudhub.org"
         )
+        logger.debug(f"Setting MLflow tracking URI to: {mlflow_uri}")
 
         # Handle SSL for local dev
         if os.getenv("MLFLOW_TRACKING_INSECURE_TLS"):
-            import mlflow.tracking._tracking_service.client
-
             mlflow.tracking._tracking_service.client.VERIFY = False
+            logger.warning("MLflow TLS verification is disabled")
 
         set_tracking_uri(mlflow_uri)
 
@@ -54,8 +111,12 @@ class WineClassifier:
             self.model = mlflow.sklearn.load_model(model_uri)
             self.model_name = model_name
             self.model_version = model_version.version
+            logger.info(
+                f"Loaded model '{self.model_name}' version '{self.model_version}' from MLflow"
+            )
         except Exception as e:
-            print(f"Error loading model: {e}")
+            logger.error(f"Error loading model: {e}")
+            raise
 
     @app.get("/", summary="Health Check")
     async def root(self):
@@ -69,10 +130,12 @@ class WineClassifier:
         """
         Predict wine class based on features
 
-        - **features**: List of wine feature vectors (each with 13 features)
+        - **wine_features**: List of wine feature vectors
         """
+        logger.debug(f"Received features for prediction: {wine_features.features}")
         features = np.array(wine_features.features)
         predictions = self.model.predict(features)
+        logger.debug(f"Predictions: {predictions}")
 
         return PredictionResponse(
             predictions=predictions.tolist(),
@@ -92,4 +155,7 @@ class WineClassifier:
 
 
 # Bind the deployment
-deployment = WineClassifier.bind()
+deployment = WineClassifier.bind(
+    model_name=os.getenv("MLFLOW_REGISTERED_MODEL_NAME", "prod.wine-classifier"),
+    model_alias=os.getenv("MLFLOW_MODEL_ALIAS", "champion"),
+)

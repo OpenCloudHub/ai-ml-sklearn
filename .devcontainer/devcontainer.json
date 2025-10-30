@@ -1,19 +1,19 @@
 {
-	"name": "OpenCloudHub - AI Machine Learning Examples",
+	"name": "OpenCloudHub - AI Machine Learning",
 	"build": {
 		"context": "..",
 		"dockerfile": "../Dockerfile",
 		"target": "dev"
 	},
-	"workspaceMount": "source=${localWorkspaceFolder},target=/workspace/project,type=bind",
+	"workspaceMount": "source=${localWorkspaceFolder},target=/workspace/project,type=bind", // Mount the local workspace folder to /workspace/project in the container
 	"workspaceFolder": "/workspace/project",
-	"runArgs": ["--env-file", "./.env", "--network", "host"],
-	"postCreateCommand": "pre-commit run --all",
+	"runArgs": ["--env-file", "./.env", "--network", "host"], // Use the host's network stack to allow access to services running on the host
+	"postCreateCommand": "pre-commit run --all", // Install and run pre-commit hooks after creating the container
 	"features": {
 		"ghcr.io/devcontainers/features/github-cli:1": {},
 		"ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
 		"ghcr.io/dhoeric/features/hadolint:1": {}
-	},
+	}, // Install GitHub CLI and Docker CLI inside the container
 	"customizations": {
 		"vscode": {
 			"extensions": [

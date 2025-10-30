@@ -54,6 +54,8 @@ def train_model(
     random_state=42,
 ):
     """Train a model with given parameters."""
+
+    # Create a sklearn Pipeline with StandardScaler and LogisticRegression
     pipeline = Pipeline(
         [
             ("scaler", StandardScaler()),
@@ -81,11 +83,13 @@ def train_model(
 
 def evaluate_model(pipeline, X_test, y_test, eval_data, log_model=True):
     """Evaluate a trained model and optionally log it to MLflow."""
+
+    # Make predictions and calculate accuracy
     y_pred = pipeline.predict(X_test)
     accuracy = accuracy_score(y_test, y_pred)
-
     logger.info(f"Test accuracy: {accuracy:.4f}")
 
+    # Log model and evaluation metrics to MLflow
     model_uri = None
     if log_model:
         signature = infer_signature(X_test, y_pred)
@@ -122,6 +126,8 @@ def train_and_evaluate(
     log_model=True,
 ):
     """Combined training and evaluation."""
+
+    # Enable MLflow autologging for sklearn, logging model manually later in evaluation step for more control
     mlflow.sklearn.autolog(
         log_models=False,
         log_model_signatures=False,
@@ -168,7 +174,7 @@ def parse_arguments():
 def main():
     args = parse_arguments()
 
-    experiment_name = os.getenv("MLFLOW_EXPERIMENT_NAME", "Wine Classification")
+    experiment_name = os.getenv("MLFLOW_EXPERIMENT_NAME", "wine-quality")
     experiment_id = get_or_create_experiment(experiment_name)
 
     timestamp = datetime.now()

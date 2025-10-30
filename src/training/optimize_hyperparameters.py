@@ -1,35 +1,24 @@
 import argparse
-import logging
 import os
 from datetime import datetime
 from functools import partial
 
 import mlflow
 import optuna
+from sklearn.metrics import accuracy_score
 
 from _utils.get_or_create_experiment import get_or_create_experiment
+from _utils.logging_config import setup_logging
 from training.train import load_data, train_and_evaluate
 
-logger = logging.getLogger("mlflow")
-
-# Set log level to debugging
-logger.setLevel(logging.ERROR)
-
-logging.basicConfig(level=logging.ERROR)
-logger = logging.getLogger(__name__)
-
-# Override Optuna's default logging to ERROR only
-optuna.logging.set_verbosity(optuna.logging.ERROR)
-
-# Reduce MLflow autolog verbosity
-logging.getLogger("mlflow.sklearn").setLevel(logging.WARNING)
+logger = setup_logging()
 
 
 def objective(
     trial, X_train, X_test, y_train, y_test, eval_data, parent_run_id, random_state
 ):
     """
-    Objective function with explicit parent_run_id for proper nesting.
+    Objective function for optuna with explicit parent_run_id for proper nesting.
     """
     try:
         # Start child run with explicit parent
@@ -67,8 +56,6 @@ def objective(
                 accuracy = result.metrics.get("accuracy_score", 0.0)
             else:
                 # Fallback: calculate accuracy directly
-                from sklearn.metrics import accuracy_score
-
                 y_pred = pipeline.predict(X_test)
                 accuracy = accuracy_score(y_test, y_pred)
 
@@ -79,16 +66,17 @@ def objective(
 
     except Exception as e:
         logger.error(f"Trial {trial.number} failed: {e}")
-        return 0.0
+        accuracy = 0.0
+        return accuracy
 
 
 def hyperparameter_search(n_trials, test_size, random_state):
     """
-    Run hyperparameter optimization using Optuna with proper parent-child relationship.
+    Run hyperparameter optimization using Optuna with parent-child relationship.
     """
 
     # Set the current active MLflow experiment
-    experiment_name = os.getenv("MLFLOW_EXPERIMENT_NAME", "Wine Classification")
+    experiment_name = os.getenv("MLFLOW_EXPERIMENT_NAME", "wine-quality")
     experiment_id = get_or_create_experiment(experiment_name)
 
     timestamp = datetime.now()
@@ -140,7 +128,7 @@ def hyperparameter_search(n_trials, test_size, random_state):
             random_state=random_state,
         )
 
-        # Initialize Optuna study
+        # Initialize and run Optuna study
         study = optuna.create_study(
             direction="maximize",
             study_name="wine_classifier_study",

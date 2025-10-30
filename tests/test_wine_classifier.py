@@ -2,6 +2,7 @@
 """
 Test script for Wine Classifier FastAPI deployment
 """
+# TODO: use pytest?
 
 import requests
 from sklearn import datasets
@@ -42,7 +43,7 @@ def test_model_info():
 
 def test_prediction():
     """Test the prediction endpoint with real wine data"""
-    print("🍷 Testing wine prediction...")
+    print("🍷 Testing wine predictions...")
 
     # Load sample wine data
     wine = datasets.load_wine()
@@ -78,7 +79,7 @@ def test_prediction():
 
 def test_single_prediction():
     """Test prediction with a single wine sample"""
-    print("🍷 Testing single wine prediction...")
+    print("🍷 Testing single random wine prediction...")
 
     # Single wine sample (from wine dataset)
     single_sample = [

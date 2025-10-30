@@ -1,4 +1,9 @@
+# src/_utils/get_or_create_experiment.py
 import mlflow
+
+from _utils.logging_config import setup_logging
+
+logger = setup_logging()
 
 
 def get_or_create_experiment(experiment_name):
@@ -17,6 +22,12 @@ def get_or_create_experiment(experiment_name):
     """
 
     if experiment := mlflow.get_experiment_by_name(experiment_name):
+        logger.info(
+            f"Experiment '{experiment_name}' found with ID: {experiment.experiment_id}"
+        )
         return experiment.experiment_id
     else:
+        logger.info(
+            f"Experiment '{experiment_name}' not found. Creating a new experiment."
+        )
         return mlflow.create_experiment(experiment_name)

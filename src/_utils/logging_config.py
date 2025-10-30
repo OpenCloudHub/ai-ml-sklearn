@@ -1,14 +1,17 @@
-# _utils/logging_config.py
+# src/_utils/logging_config.py
 import logging
 import warnings
 
+import optuna
 import urllib3
 
 
 def setup_logging(level=logging.INFO, library_level=logging.WARNING):
     """
     Configure logging for the entire project.
+    Sets log levels across libraries and disables some warnings.
     Call this at the start of your main scripts.
+    Adjust to your individual requirements.
     """
     # Configure root logger
     logging.basicConfig(
@@ -28,8 +31,6 @@ def setup_logging(level=logging.INFO, library_level=logging.WARNING):
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     # Optuna logging
-    import optuna
-
     optuna.logging.set_verbosity(library_level)
 
     # Suppress warnings
