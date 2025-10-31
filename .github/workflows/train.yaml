@@ -61,12 +61,12 @@ on:
         required: true
         type: choice
         options:
-          - cpu-small
-          - cpu-medium
-          - cpu-large
-          - gpu-small
-          - gpu-medium
-          - gpu-large
+          - 'cpu-small'
+          - 'cpu-medium'
+          - 'cpu-large'
+          - 'gpu-small'
+          - 'gpu-medium'
+          - 'gpu-large'
         default: 'cpu-small'
       approval_mode:
         description: 'Approval mode'
@@ -86,8 +86,8 @@ on:
         type: choice
         required: false
         option:
-          - higher
-          - lower
+          - 'higher'
+          - 'lower'
         default: 'higher'
       comparison_threshold:
         description: 'Minimum improvement threshold (0.05 = 5%)'
