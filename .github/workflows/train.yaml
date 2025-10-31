@@ -85,7 +85,7 @@ on:
         description: "Direction to compare metrics"
         type: choice
         required: false
-        option:
+        options:
           - 'higher'
           - 'lower'
         default: 'higher'
