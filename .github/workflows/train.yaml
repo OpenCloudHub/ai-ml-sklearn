@@ -96,7 +96,7 @@ jobs:
     uses: opencloudhub/.github/.github/workflows/shared-argo-ml-workflow.yaml@main
     with:
       model_name: "wine-classifier"
-      experiment_name: "wine-quality-prediction"
+      experiment_name: "wine-quality"
       compute_type: ${{ inputs.compute_type }}
       approval_mode: ${{ inputs.approval_mode }}
       comparison_metric: ${{ inputs.comparison_metric }}
