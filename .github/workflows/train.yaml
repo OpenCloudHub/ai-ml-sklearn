@@ -81,14 +81,10 @@ on:
         required: false
         type: string
         default: 'accuracy'
-      comparison_direction:
-        description: "Direction to compare metrics"
-        type: choice
-        required: false
-        options:
-          - 'higher'
-          - 'lower'
-        default: 'higher'
+      higher_is_better:
+        description: "If igher target metric value is better than lower."
+        type: boolean
+        default: true
       comparison_threshold:
         description: 'Minimum improvement threshold (0.05 = 5%)'
         required: false
@@ -104,7 +100,7 @@ jobs:
       compute_type: ${{ inputs.compute_type }}
       approval_mode: ${{ inputs.approval_mode }}
       comparison_metric: ${{ inputs.comparison_metric }}
-      comparison_direction: ${{ inputs.comparison_direction}}
+      higher_is_better: ${{ inputs.higher_is_better}}
       comparison_threshold: ${{ inputs.comparison_threshold }}
       training_image: "ghcr.io/opencloudhub/wine-classifier-training:latest"
       training_entrypoint: ${{ inputs.training_entrypoint }}
