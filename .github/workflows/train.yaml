@@ -95,6 +95,7 @@ jobs:
   train:
     uses: opencloudhub/.github/.github/workflows/shared-argo-ml-workflow.yaml@main
     with:
+      repo_name: ${{ github.event.repository.name }}
       model_name: "wine-classifier"
       experiment_name: "wine-quality"
       compute_type: ${{ inputs.compute_type }}
