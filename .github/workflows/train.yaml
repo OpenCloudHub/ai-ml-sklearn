@@ -82,7 +82,7 @@ on:
         type: string
         default: 'accuracy'
       higher_is_better:
-        description: "If igher target metric value is better than lower."
+        description: "Higher metric value is better."
         type: boolean
         default: true
       comparison_threshold:
@@ -102,7 +102,7 @@ jobs:
       comparison_metric: ${{ inputs.comparison_metric }}
       higher_is_better: ${{ inputs.higher_is_better}}
       comparison_threshold: ${{ inputs.comparison_threshold }}
-      training_image: "ghcr.io/opencloudhub/wine-classifier-training:latest"
+      training_image: "opencloudhuborg/wine-classifier-training:latest"
       training_entrypoint: ${{ inputs.training_entrypoint }}
       training_args: ${{ inputs.training_args }}
     secrets: inherit
