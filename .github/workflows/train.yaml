@@ -77,10 +77,10 @@ on:
           - automatic
         default: 'manual'
       comparison_metric:
-        description: 'Metric to compare models'
+        description: 'Metric to compare models, mind of pre and suffixes'
         required: false
         type: string
-        default: 'accuracy'
+        default: 'training_accuracy_score'
       higher_is_better:
         description: "Higher metric value is better."
         type: boolean
