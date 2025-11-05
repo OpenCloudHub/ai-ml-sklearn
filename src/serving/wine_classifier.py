@@ -5,7 +5,6 @@ from typing import List
 import mlflow.tracking._tracking_service.client
 import numpy as np
 from fastapi import FastAPI
-from mlflow import MlflowClient, set_tracking_uri
 from pydantic import BaseModel, Field
 from ray import serve
 
@@ -83,40 +82,47 @@ class PredictionResponse(BaseModel):
 )
 @serve.ingress(app)
 class WineClassifier:
-    """Wine Classifier API using MLflow model
+    """Wine Classifier API with baked-in model"""
 
-    Loads a wine classification model from MLflow and provides prediction endpoints.
-    """
+    # def __init__(self, model_name: str | None = None, model_alias: str | None = None):
+    #     client = MlflowClient()
 
-    def __init__(self, model_name: str | None = None, model_alias: str | None = None):
-        client = MlflowClient()
+    #     # Set MLflow tracking URI
+    #     mlflow_uri = os.getenv(
+    #         "MLFLOW_TRACKING_URI", "https://mlflow.ai.internal.opencloudhub.org"
+    #     )
+    #     logger.debug(f"Setting MLflow tracking URI to: {mlflow_uri}")
 
-        # Set MLflow tracking URI
-        mlflow_uri = os.getenv(
-            "MLFLOW_TRACKING_URI", "https://mlflow.ai.internal.opencloudhub.org"
-        )
-        logger.debug(f"Setting MLflow tracking URI to: {mlflow_uri}")
+    #     # Handle SSL for local dev
+    #     if os.getenv("MLFLOW_TRACKING_INSECURE_TLS"):
+    #         mlflow.tracking._tracking_service.client.VERIFY = False
+    #         logger.warning("MLflow TLS verification is disabled")
 
-        # Handle SSL for local dev
-        if os.getenv("MLFLOW_TRACKING_INSECURE_TLS"):
-            mlflow.tracking._tracking_service.client.VERIFY = False
-            logger.warning("MLflow TLS verification is disabled")
+    #     set_tracking_uri(mlflow_uri)
 
-        set_tracking_uri(mlflow_uri)
+    #     # Load model from MLflow
+    #     try:
+    #         model_version = client.get_model_version_by_alias(model_name, model_alias)
+    #         model_uri = f"models:/{model_name}@{model_alias}"
+    #         self.model = mlflow.sklearn.load_model(model_uri)
+    #         self.model_name = model_name
+    #         self.model_version = model_version.version
+    #         logger.info(
+    #             f"Loaded model '{self.model_name}' version '{self.model_version}' from MLflow"
+    #         )
+    #     except Exception as e:
+    #         logger.error(f"Error loading model: {e}")
+    #         raise
 
-        # Load model from MLflow
-        try:
-            model_version = client.get_model_version_by_alias(model_name, model_alias)
-            model_uri = f"models:/{model_name}@{model_alias}"
-            self.model = mlflow.sklearn.load_model(model_uri)
-            self.model_name = model_name
-            self.model_version = model_version.version
-            logger.info(
-                f"Loaded model '{self.model_name}' version '{self.model_version}' from MLflow"
-            )
-        except Exception as e:
-            logger.error(f"Error loading model: {e}")
-            raise
+    def __init__(self):
+        # Load model from local filesystem (baked into image)
+        model_path = os.getenv("MODEL_PATH", "/workspace/project/model")
+        self.model_name = os.getenv("MODEL_NAME", "unknown")
+        self.model_version = os.getenv("MODEL_VERSION", "unknown")
+
+        logger.info(f"Loading model from {model_path}")
+        self.model = mlflow.sklearn.load_model(model_path)
+        logger.info(f"Loaded model '{self.model_name}' version '{self.model_version}'")
 
     @app.get("/", summary="Health Check")
     async def root(self):
@@ -154,8 +160,4 @@ class WineClassifier:
         }
 
 
-# Bind the deployment
-deployment = WineClassifier.bind(
-    model_name=os.getenv("MLFLOW_REGISTERED_MODEL_NAME", "prod.wine-classifier"),
-    model_alias=os.getenv("MLFLOW_MODEL_ALIAS", "champion"),
-)
+deployment = WineClassifier.bind()
