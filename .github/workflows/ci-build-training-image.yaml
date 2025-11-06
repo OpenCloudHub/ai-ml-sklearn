@@ -17,6 +17,7 @@ jobs:
       repo-name: "wine-classifier-training"
       context: "."
       dockerfile: "Dockerfile"
+      target: "training"
       push-on-pr: true
     secrets:
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
