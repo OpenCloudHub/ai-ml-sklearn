@@ -117,7 +117,9 @@ class WineClassifier:
     def __init__(self):
         # Load model from local filesystem (baked into image)
         model_path = os.getenv("MODEL_PATH", "/workspace/project/model")
-        self.model_name = os.getenv("MODEL_NAME", "unknown")
+        self.model_name = os.getenv(
+            "MODEL_NAME", "unknown"
+        )  # TODO: currently this is staging.wine_classifier as this is needed for loading model in the bilding phase but ye that's bad maybe?
         self.model_version = os.getenv("MODEL_VERSION", "unknown")
 
         logger.info(f"Loading model from {model_path}")

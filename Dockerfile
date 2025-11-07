@@ -89,5 +89,5 @@ ENV VIRTUAL_ENV="/workspace/project/.venv" \
     MODEL_VERSION="${MODEL_VERSION}" \
     ENVIRONMENT=production
 
-# Download model from MLflow at build time
-RUN python -c "import mlflow; mlflow.set_tracking_uri('${MLFLOW_TRACKING_URI}'); mlflow.artifacts.download_artifacts(artifact_uri='models:/${MODEL_NAME}/${MODEL_VERSION}', dst_path='/workspace/project/model'); print('✅ Model ${MODEL_NAME} v${MODEL_VERSION} downloaded')"
+# Download staging model from MLflow at build time
+RUN python -c "import mlflow; mlflow.set_tracking_uri('${MLFLOW_TRACKING_URI}'); mlflow.artifacts.download_artifacts(artifact_uri='models:/staging.${MODEL_NAME}/${MODEL_VERSION}', dst_path='/workspace/project/model'); print('✅ Model ${MODEL_NAME} v${MODEL_VERSION} downloaded')"
