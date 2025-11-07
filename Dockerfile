@@ -80,14 +80,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY src/serving/ ./src/serving/
 COPY src/_utils/ ./src/_utils/
 
-# Download model from MLflow at build time
-RUN python -c "\
-    import mlflow; \
-    mlflow.set_tracking_uri('${MLFLOW_TRACKING_URI}'); \
-    model_uri = f'models:/${MODEL_NAME}/{MODEL_VERSION}'; \
-    mlflow.artifacts.download_artifacts(artifact_uri=model_uri, dst_path='/workspace/project/model'); \
-    print(f'✅ Model {MODEL_NAME} v{MODEL_VERSION} downloaded')"
-
+# Set environment variables
 ENV VIRTUAL_ENV="/workspace/project/.venv" \
     PATH="/workspace/project/.venv/bin:$PATH" \
     PYTHONPATH="/workspace/project/src" \
@@ -96,5 +89,5 @@ ENV VIRTUAL_ENV="/workspace/project/.venv" \
     MODEL_VERSION="${MODEL_VERSION}" \
     ENVIRONMENT=production
 
-# Entrypoint for serving
-CMD ["serve", "run", "src.serving.wine_classifier:deployment"]
+# Download model from MLflow at build time
+RUN python -c "import mlflow; mlflow.set_tracking_uri('${MLFLOW_TRACKING_URI}'); mlflow.artifacts.download_artifacts(artifact_uri='models:/${MODEL_NAME}/${MODEL_VERSION}', dst_path='/workspace/project/model'); print('✅ Model ${MODEL_NAME} v${MODEL_VERSION} downloaded')"
