@@ -84,47 +84,15 @@ class PredictionResponse(BaseModel):
 class WineClassifier:
     """Wine Classifier API with baked-in model"""
 
-    # def __init__(self, model_name: str | None = None, model_alias: str | None = None):
-    #     client = MlflowClient()
-
-    #     # Set MLflow tracking URI
-    #     mlflow_uri = os.getenv(
-    #         "MLFLOW_TRACKING_URI", "https://mlflow.ai.internal.opencloudhub.org"
-    #     )
-    #     logger.debug(f"Setting MLflow tracking URI to: {mlflow_uri}")
-
-    #     # Handle SSL for local dev
-    #     if os.getenv("MLFLOW_TRACKING_INSECURE_TLS"):
-    #         mlflow.tracking._tracking_service.client.VERIFY = False
-    #         logger.warning("MLflow TLS verification is disabled")
-
-    #     set_tracking_uri(mlflow_uri)
-
-    #     # Load model from MLflow
-    #     try:
-    #         model_version = client.get_model_version_by_alias(model_name, model_alias)
-    #         model_uri = f"models:/{model_name}@{model_alias}"
-    #         self.model = mlflow.sklearn.load_model(model_uri)
-    #         self.model_name = model_name
-    #         self.model_version = model_version.version
-    #         logger.info(
-    #             f"Loaded model '{self.model_name}' version '{self.model_version}' from MLflow"
-    #         )
-    #     except Exception as e:
-    #         logger.error(f"Error loading model: {e}")
-    #         raise
-
     def __init__(self):
         # Load model from local filesystem (baked into image)
         model_path = os.getenv("MODEL_PATH", "/workspace/project/model")
-        self.model_name = os.getenv(
-            "MODEL_NAME", "unknown"
-        )  # TODO: currently this is staging.wine_classifier as this is needed for loading model in the bilding phase but ye that's bad maybe?
+        self.model_name = os.getenv("MODEL_NAME", "unknown")
         self.model_version = os.getenv("MODEL_VERSION", "unknown")
-
-        logger.info(f"Loading model from {model_path}")
         self.model = mlflow.sklearn.load_model(model_path)
-        logger.info(f"Loaded model '{self.model_name}' version '{self.model_version}'")
+        logger.info(
+            f"Loaded model '{self.model_name}' version '{self.model_version}' from {model_path}"
+        )
 
     @app.get("/", summary="Health Check")
     async def root(self):

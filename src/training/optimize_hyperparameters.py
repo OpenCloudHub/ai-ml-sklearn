@@ -9,6 +9,7 @@ from sklearn.metrics import accuracy_score
 
 from _utils.get_or_create_experiment import get_or_create_experiment
 from _utils.logging_config import setup_logging
+from _utils.mlflow_tags import set_mlflow_tags
 from training.train import load_data, train_and_evaluate
 
 logger = setup_logging()
@@ -106,7 +107,7 @@ def hyperparameter_search(n_trials, test_size, random_state):
         )
 
         # Set parent run tags
-        mlflow.set_tags(
+        set_mlflow_tags(
             {
                 "project": "Wine Classification",
                 "optimizer_engine": "optuna",
@@ -159,8 +160,14 @@ def hyperparameter_search(n_trials, test_size, random_state):
             run_name="best_model", nested=True, parent_run_id=parent_run_id
         ):
             # Set tags for final model
-            mlflow.set_tags(
-                {"model_stage": "final", "best_trial_number": study.best_trial.number}
+            set_mlflow_tags(
+                {
+                    "project": "Wine Classification",
+                    "model_family": "LogisticRegression",
+                    "training_framework": "scikit-learn",
+                    "run_type": "final_model_training",
+                    "best_trial_number": study.best_trial.number,
+                }
             )
 
             # Train with best parameters and full logging
