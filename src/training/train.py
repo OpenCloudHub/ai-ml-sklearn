@@ -18,7 +18,7 @@ from sklearn.preprocessing import StandardScaler
 
 from _utils.get_or_create_experiment import get_or_create_experiment
 from _utils.logging_config import setup_logging
-from _utils.mlflow_tags import set_mlflow_tags
+from _utils.mlflow_tags import set_mlflow_experiment_tags
 
 # Set up ray
 # Always use 'auto' - works everywhere
@@ -182,7 +182,7 @@ def main():
     run_name = f"ray_wine_{timestamp.strftime('%Y%m%d_%H%M%S')}"
 
     with mlflow.start_run(experiment_id=experiment_id, run_name=run_name):
-        set_mlflow_tags(
+        set_mlflow_experiment_tags(
             {
                 "project": "Wine Classification",
                 "model_family": "LogisticRegression",
