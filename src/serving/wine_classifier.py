@@ -89,7 +89,9 @@ class WineClassifier:
         model_path = os.getenv("MODEL_PATH", "/workspace/project/model")
         self.model_name = os.getenv("MODEL_NAME", "unknown")
         self.model_version = os.getenv("MODEL_VERSION", "unknown")
+        self.git_commit = os.getenv("GIT_COMMIT", "unknown")
         self.model = mlflow.sklearn.load_model(model_path)
+        self
         logger.info(
             f"Loaded model '{self.model_name}' version '{self.model_version}' from {model_path}"
         )
@@ -125,6 +127,7 @@ class WineClassifier:
         return {
             "model_name": self.model_name,
             "model_version": self.model_version,
+            "git_commit": self.git_commit,
             "features_expected": 13,
             "output_classes": ["0", "1", "2"],
         }
