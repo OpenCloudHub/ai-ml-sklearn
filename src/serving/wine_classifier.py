@@ -67,7 +67,6 @@ class PredictionResponse(BaseModel):
         ..., description="Predicted wine classes for the input features"
     )
     model_name: str
-    model_version: str
 
 
 class RootResponse(BaseModel):
