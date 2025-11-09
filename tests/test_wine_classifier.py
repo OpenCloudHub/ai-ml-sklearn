@@ -2,7 +2,7 @@
 """
 Test script for Wine Classifier FastAPI deployment
 """
-# TODO: use pytest?
+# TODO: use pytest
 
 import requests
 from sklearn import datasets

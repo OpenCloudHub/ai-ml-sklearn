@@ -2,24 +2,48 @@ import argparse
 import os
 from datetime import datetime
 from functools import partial
+from typing import Any, Dict, Tuple
 
 import mlflow
+import numpy.typing as npt
 import optuna
+import pandas as pd
+from optuna import Study, Trial
 from sklearn.metrics import accuracy_score
 
 from _utils.get_or_create_experiment import get_or_create_experiment
 from _utils.logging_config import setup_logging
-from _utils.mlflow_tags import set_mlflow_tags
+from _utils.mlflow_tags import set_mlflow_experiment_tags
 from training.train import load_data, train_and_evaluate
 
 logger = setup_logging()
 
 
 def objective(
-    trial, X_train, X_test, y_train, y_test, eval_data, parent_run_id, random_state
-):
+    trial: Trial,
+    X_train: npt.NDArray,
+    X_test: npt.NDArray,
+    y_train: npt.NDArray,
+    y_test: npt.NDArray,
+    eval_data: pd.DataFrame,
+    parent_run_id: str,
+    random_state: int,
+) -> float:
     """
     Objective function for optuna with explicit parent_run_id for proper nesting.
+
+    Args:
+        trial: Optuna trial object
+        X_train: Training features
+        X_test: Test features
+        y_train: Training labels
+        y_test: Test labels
+        eval_data: DataFrame with test data and labels
+        parent_run_id: MLflow parent run ID for nesting
+        random_state: Random seed for reproducibility
+
+    Returns:
+        Accuracy score for this trial
     """
     try:
         # Start child run with explicit parent
@@ -32,27 +56,28 @@ def objective(
             )
 
             # Define hyperparameters
-            C = trial.suggest_float("C", 1e-3, 100.0, log=True)
-            max_iter = trial.suggest_int("max_iter", 100, 1000)
-            solver = trial.suggest_categorical("solver", ["lbfgs", "liblinear", "saga"])
+            C: float = trial.suggest_float("C", 1e-3, 100.0, log=True)
+            max_iter: int = trial.suggest_int("max_iter", 100, 1000)
+            solver: str = trial.suggest_categorical(
+                "solver", ["lbfgs", "liblinear", "saga"]
+            )
 
             # Train and evaluate
-            result, model_uri, pipeline = (
-                train_and_evaluate(  # <-- Note: 3 return values
-                    X_train=X_train,
-                    X_test=X_test,
-                    y_train=y_train,
-                    y_test=y_test,
-                    eval_data=eval_data,
-                    C=C,
-                    max_iter=max_iter,
-                    solver=solver,
-                    random_state=random_state,
-                    log_model=False,
-                )
+            result, model_uri, pipeline = train_and_evaluate(
+                X_train=X_train,
+                X_test=X_test,
+                y_train=y_train,
+                y_test=y_test,
+                eval_data=eval_data,
+                C=C,
+                max_iter=max_iter,
+                solver=solver,
+                random_state=random_state,
+                log_model=False,
             )
 
             # Extract accuracy from result or use a default
+            accuracy: float
             if result and result.metrics:
                 accuracy = result.metrics.get("accuracy_score", 0.0)
             else:
@@ -63,19 +88,27 @@ def objective(
             # Log trial-specific metric
             mlflow.log_metric("trial_accuracy", accuracy)
 
-            return accuracy  # Return the actual accuracy value
+            return accuracy
 
     except Exception as e:
         logger.error(f"Trial {trial.number} failed: {e}")
-        accuracy = 0.0
-        return accuracy
+        return 0.0
 
 
-def hyperparameter_search(n_trials, test_size, random_state):
+def hyperparameter_search(
+    n_trials: int, test_size: float, random_state: int
+) -> Tuple[Dict[str, Any], float]:
     """
     Run hyperparameter optimization using Optuna with parent-child relationship.
-    """
 
+    Args:
+        n_trials: Number of optimization trials to run
+        test_size: Proportion of dataset to include in test split
+        random_state: Random seed for reproducibility
+
+    Returns:
+        Tuple of (best parameters dict, best score)
+    """
     # Set the current active MLflow experiment
     experiment_name = os.getenv("MLFLOW_EXPERIMENT_NAME", "wine-quality")
     experiment_id = get_or_create_experiment(experiment_name)
@@ -85,7 +118,7 @@ def hyperparameter_search(n_trials, test_size, random_state):
 
     # Start parent run and capture its ID
     with mlflow.start_run(run_name=run_name, experiment_id=experiment_id) as parent_run:
-        parent_run_id = parent_run.info.run_id
+        parent_run_id: str = parent_run.info.run_id
 
         logger.info(f"Started parent run with ID: {parent_run_id}")
 
@@ -107,12 +140,12 @@ def hyperparameter_search(n_trials, test_size, random_state):
         )
 
         # Set parent run tags
-        set_mlflow_tags(
+        set_mlflow_experiment_tags(
             {
                 "project": "Wine Classification",
                 "optimizer_engine": "optuna",
                 "model_family": "logistic_regression",
-                "feature_set_version": 1,
+                "feature_set_version": "1",
                 "run_type": "parent_optimization",
             }
         )
@@ -130,7 +163,7 @@ def hyperparameter_search(n_trials, test_size, random_state):
         )
 
         # Initialize and run Optuna study
-        study = optuna.create_study(
+        study: Study = optuna.create_study(
             direction="maximize",
             study_name="wine_classifier_study",
             sampler=optuna.samplers.TPESampler(seed=random_state),
@@ -145,7 +178,7 @@ def hyperparameter_search(n_trials, test_size, random_state):
         )
 
         # Log best results to parent run
-        best_params = study.best_params
+        best_params: Dict[str, Any] = study.best_params
         mlflow.log_params({f"best_{k}": v for k, v in best_params.items()})
         mlflow.log_metric("best_accuracy", study.best_value)
         mlflow.log_metric("n_trials_completed", len(study.trials))
@@ -160,18 +193,18 @@ def hyperparameter_search(n_trials, test_size, random_state):
             run_name="best_model", nested=True, parent_run_id=parent_run_id
         ):
             # Set tags for final model
-            set_mlflow_tags(
+            set_mlflow_experiment_tags(
                 {
                     "project": "Wine Classification",
                     "model_family": "LogisticRegression",
                     "training_framework": "scikit-learn",
                     "run_type": "final_model_training",
-                    "best_trial_number": study.best_trial.number,
+                    "best_trial_number": str(study.best_trial.number),
                 }
             )
 
             # Train with best parameters and full logging
-            result, accuracy, pipeline = train_and_evaluate(
+            result, model_uri, pipeline = train_and_evaluate(
                 X_train=X_train,
                 X_test=X_test,
                 y_train=y_train,
@@ -188,10 +221,10 @@ def hyperparameter_search(n_trials, test_size, random_state):
             registered_model_name = os.getenv("MLFLOW_REGISTERED_MODEL_NAME")
             if registered_model_name:
                 run_id = mlflow.active_run().info.run_id
-                model_uri = f"runs:/{run_id}/model"
+                model_uri_str = f"runs:/{run_id}/model"
 
                 try:
-                    mlflow.register_model(model_uri, registered_model_name)
+                    mlflow.register_model(model_uri_str, registered_model_name)
                     logger.info(
                         f"Model registered successfully as '{registered_model_name}'"
                     )
@@ -204,15 +237,14 @@ def hyperparameter_search(n_trials, test_size, random_state):
 
             if result:
                 logger.info(f"Final model evaluation metrics: {result.metrics}")
-            else:
-                logger.info(f"Final model accuracy: {accuracy:.4f}")
 
         logger.info("\nHyperparameter optimization complete!")
 
         return best_params, study.best_value
 
 
-def parse_arguments():
+def parse_arguments() -> argparse.Namespace:
+    """Parse command line arguments."""
     parser = argparse.ArgumentParser(
         description="Hyperparameter tuning for wine classifier"
     )
@@ -224,7 +256,8 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def main():
+def main() -> None:
+    """Main hyperparameter search function."""
     args = parse_arguments()
 
     best_params, best_score = hyperparameter_search(

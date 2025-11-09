@@ -1,13 +1,17 @@
 import argparse
 import os
 from datetime import datetime
+from typing import Optional, Tuple
 
 import joblib
 import mlflow
 import mlflow.sklearn
+import numpy.typing as npt
 import pandas as pd
 import ray
 from mlflow.models import infer_signature
+from mlflow.models.evaluation.base import EvaluationResult
+from mlflow.models.model import ModelInfo
 from ray.util.joblib import register_ray
 from sklearn import datasets
 from sklearn.linear_model import LogisticRegression
@@ -20,8 +24,7 @@ from _utils.get_or_create_experiment import get_or_create_experiment
 from _utils.logging_config import setup_logging
 from _utils.mlflow_tags import set_mlflow_experiment_tags
 
-# Set up ray
-# Always use 'auto' - works everywhere
+# 📌 Set up ray, use 'auto' - works everywhere
 ray.init(address="auto", ignore_reinit_error=True)
 register_ray()
 
@@ -29,8 +32,19 @@ register_ray()
 logger = setup_logging()
 
 
-def load_data(test_size, random_state):
-    """Load the wine dataset."""
+def load_data(
+    test_size: float, random_state: int
+) -> Tuple[npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray, pd.DataFrame]:
+    """
+    Load and split the wine dataset.
+
+    Args:
+        test_size: Proportion of dataset to include in test split
+        random_state: Random seed for reproducibility
+
+    Returns:
+        Tuple of (X_train, X_test, y_train, y_test, eval_data)
+    """
     wine = datasets.load_wine()
 
     X_train, X_test, y_train, y_test = train_test_split(
@@ -47,15 +61,27 @@ def load_data(test_size, random_state):
 
 
 def train_model(
-    X_train,
-    y_train,
-    C=1.0,
-    max_iter=100,
-    solver="lbfgs",
-    random_state=42,
-):
-    """Train a model with given parameters."""
+    X_train: npt.NDArray,
+    y_train: npt.NDArray,
+    C: float = 1.0,
+    max_iter: int = 100,
+    solver: str = "lbfgs",
+    random_state: int = 42,
+) -> Pipeline:
+    """
+    Train a logistic regression model with standard scaling and given parameters.
 
+    Args:
+        X_train: Training features
+        y_train: Training labels
+        C: Regularization strength
+        max_iter: Maximum number of iterations
+        solver: Algorithm to use for optimization
+        random_state: Random seed for reproducibility
+
+    Returns:
+        Trained sklearn Pipeline
+    """
     # Create a sklearn Pipeline with StandardScaler and LogisticRegression
     pipeline = Pipeline(
         [
@@ -82,26 +108,43 @@ def train_model(
     return pipeline
 
 
-def evaluate_model(pipeline, X_test, y_test, eval_data, log_model=True):
-    """Evaluate a trained model and optionally log it to MLflow."""
+def evaluate_model(
+    pipeline: Pipeline,
+    X_test: npt.NDArray,
+    y_test: npt.NDArray,
+    eval_data: pd.DataFrame,
+    log_model: bool = True,
+) -> Tuple[Optional[EvaluationResult], Optional[str]]:
+    """
+    Evaluate a trained model and optionally log it to MLflow.
 
+    Args:
+        pipeline: Trained sklearn Pipeline
+        X_test: Test features
+        y_test: Test labels
+        eval_data: DataFrame with test data and labels
+        log_model: Whether to log the model to MLflow
+
+    Returns:
+        Tuple of (evaluation result, model URI)
+    """
     # Make predictions and calculate accuracy
     y_pred = pipeline.predict(X_test)
     accuracy = accuracy_score(y_test, y_pred)
     logger.info(f"Test accuracy: {accuracy:.4f}")
 
     # Log model and evaluation metrics to MLflow
-    model_uri = None
+    model_uri: Optional[str] = None
     if log_model:
         signature = infer_signature(X_test, y_pred)
-        model_info = mlflow.sklearn.log_model(
+        model_info: ModelInfo = mlflow.sklearn.log_model(
             sk_model=pipeline,
             name="model",
             signature=signature,
         )
         model_uri = model_info.model_uri
 
-        result = mlflow.evaluate(
+        result: EvaluationResult = mlflow.evaluate(
             model=model_uri,
             data=eval_data,
             targets="label",
@@ -115,19 +158,35 @@ def evaluate_model(pipeline, X_test, y_test, eval_data, log_model=True):
 
 
 def train_and_evaluate(
-    X_train,
-    X_test,
-    y_train,
-    y_test,
-    eval_data,
-    C=1.0,
-    max_iter=100,
-    solver="lbfgs",
-    random_state=42,
-    log_model=True,
-):
-    """Combined training and evaluation."""
+    X_train: npt.NDArray,
+    X_test: npt.NDArray,
+    y_train: npt.NDArray,
+    y_test: npt.NDArray,
+    eval_data: pd.DataFrame,
+    C: float = 1.0,
+    max_iter: int = 100,
+    solver: str = "lbfgs",
+    random_state: int = 42,
+    log_model: bool = True,
+) -> Tuple[Optional[EvaluationResult], Optional[str], Pipeline]:
+    """
+    Combined training and evaluation.
 
+    Args:
+        X_train: Training features
+        X_test: Test features
+        y_train: Training labels
+        y_test: Test labels
+        eval_data: DataFrame with test data and labels
+        C: Regularization strength
+        max_iter: Maximum number of iterations
+        solver: Algorithm to use for optimization
+        random_state: Random seed for reproducibility
+        log_model: Whether to log the model to MLflow
+
+    Returns:
+        Tuple of (evaluation result, model URI, trained pipeline)
+    """
     # Enable MLflow autologging for sklearn, logging model manually later in evaluation step for more control
     mlflow.sklearn.autolog(
         log_models=False,
@@ -156,7 +215,8 @@ def train_and_evaluate(
     return result, model_uri, pipeline
 
 
-def parse_arguments():
+def parse_arguments() -> argparse.Namespace:
+    """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Train wine classifier")
     parser.add_argument("--C", type=float, default=1.0, help="Regularization strength")
     parser.add_argument("--max_iter", type=int, default=100, help="Maximum iterations")
@@ -172,7 +232,8 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def main():
+def main() -> None:
+    """Main training function."""
     args = parse_arguments()
 
     experiment_name = os.getenv("MLFLOW_EXPERIMENT_NAME", "wine-quality")
@@ -209,7 +270,7 @@ def main():
             log_model=True,
         )
 
-        # Register the model only if MLFLOW_REGISTERED_MODEL_NAME is set
+        # Register the model if MLFLOW_REGISTERED_MODEL_NAME is set
         registered_model_name = os.getenv("MLFLOW_REGISTERED_MODEL_NAME")
         if registered_model_name:
             run_id = mlflow.active_run().info.run_id

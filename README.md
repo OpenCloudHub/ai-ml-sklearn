@@ -15,7 +15,7 @@
 <h1 align="center">Wine Classifier - MLOps Demo</h1>
 
 <p align="center">
-    Scikit-learn wine classification with a modern MLOps pipeline featuring MLflow tracking, Ray for distributed training and serving, hyperparameter optimization, and production-ready deployment patterns.<br />
+    Scikit-learn wine classification with a modern MLOps pipeline featuring MLflow tracking and Ray for distributed training, hyperparameter optimization and serving.<br />
     <a href="https://github.com/opencloudhub"><strong>Explore OpenCloudHub »</strong></a>
   </p>
 </div>
@@ -28,9 +28,7 @@ ______________________________________________________________________
     <li><a href="#about">About</a></li>
     <li><a href="#features">Features</a></li>
     <li><a href="#getting-started">Getting Started</a></li>
-    <li><a href="#usage">Usage</a></li>
     <li><a href="#project-structure">Project Structure</a></li>
-    <li><a href="#mlops-pipeline">MLOps Pipeline</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
     <li><a href="#contact">Contact</a></li>
@@ -41,18 +39,7 @@ ______________________________________________________________________
 
 <h2 id="about">🍷 About</h2>
 
-This repository demonstrates an example implementation for wine classification using scikit-learn and the UCI Wine dataset. It showcases production-ready machine learning practices including experiment tracking, hyperparameter optimization, model registration, and containerized deployment and serves as demonstration within the OpenCloudHub project.\
-**Ray** is used for distributed training and scalable model serving.
-
-**Key Technologies:**
-
-- **ML Framework**: Scikit-learn (Logistic Regression)
-- **Distributed Training & Serving**: Ray
-- **Experiment Tracking**: MLflow
-- **Hyperparameter Optimization**: Optuna
-- **Containerization**: Docker
-- **Dependency Management**: UV
-- **Development**: DevContainers for consistent environments
+This repository demonstrates an example implementation for wine classification using scikit-learn and the UCI Wine dataset. It showcases combining machine learning practices including experiment tracking, hyperparameter optimization, model registration, and containerized deployment and serves as demonstration within the OpenCloudHub project.\\
 
 ______________________________________________________________________
 
@@ -60,12 +47,9 @@ ______________________________________________________________________
 
 - 🔬 **Experiment Tracking**: MLflow integration with model registry
 - 🎯 **Hyperparameter Tuning**: Automated optimization using Optuna
-- 🐳 **Containerized Training**: Docker-based training environment
+- 🐳 **Containerized Training**: Docker-based training environment with UV
 - ⚡ **Distributed Training & Serving**: Ray for scalable workflows
-- 📊 **Model Evaluation**: Comprehensive metrics and visualization
-- 🚀 **CI/CD Ready**: GitHub Actions workflows for automated training
-- 📁 **MLflow Projects**: Standardized, reproducible ML workflows
-- 🔄 **Model Registration**: Threshold-based automatic model promotion
+- 🚀 **CI/CD Ready**: GitHub Actions workflows for automated training and CI
 - 🧪 **Development Environment**: VS Code DevContainer setup
 
 ______________________________________________________________________
@@ -81,50 +65,42 @@ ______________________________________________________________________
 
 1. **Clone the repository**
 
-```bash
-   git clone https://github.com/opencloudhub/ai-ml-sklearn.git
-   cd ai-ml-sklearn
-```
+   ```bash
+      git clone https://github.com/opencloudhub/ai-ml-sklearn.git
+      cd ai-ml-sklearn
+   ```
 
-2. **Open in DevContainer** (Recommended)
+1. **Open in DevContainer** (Recommended)
 
-```bash
-   code .
-```
+   VSCode: `Ctrl+Shift+P` → `Dev Containers: Rebuild and Reopen in Container`
 
-Then open in DevContainer: `Ctrl+Shift+P` → `Dev Containers: Rebuild and Reopen in Container`
+   Or **setup locally without DevContainer**:
 
-Or **setup locally without DevContainer**:
+   ```bash
+      # Install UV
+      curl -LsSf https://astral.sh/uv/install.sh | sh
 
-```bash
-   # Install UV
-   curl -LsSf https://astral.sh/uv/install.sh | sh
+      # Install dependencies
+      uv sync --dev
+   ```
 
-   # Install dependencies
-   uv sync --dev
-```
+1. **Start local MLflow tracking server**
 
-3. **Start MLflow tracking server**
+   ```bash
+      mlflow server --host 0.0.0.0 --port 8081
+   ```
 
-```bash
-   mlflow server --host 0.0.0.0 --port 8081
-```
+   Access at `http://localhost:8081`
 
-Access at `http://localhost:8081`
+1. **Start local Ray cluster**
 
-4. **Start local Ray cluster**
+   ```bash
+      ray start --head
+   ```
 
-```bash
-   ray start --head
-```
+   Access dashboard at `http://127.0.0.1:8265`
 
-Access dashboard at `http://127.0.0.1:8265`
-
-You're now ready to train and serve models!
-
-______________________________________________________________________
-
-<h2 id="usage">💻 Usage</h2>
+You're now ready to develop, train and serve models locally!
 
 ### Training
 
@@ -148,7 +124,7 @@ python src/training/optimize_hyperparameters.py --n_trials 50 --test_size 0.2
 
 ### Model Serving
 
-Ensure you have a model registered in MLflow with the `@champion` alias.
+Ensure you have a trained model to load either from local folder or from mlflow by setting the 'MODEL_PATH' environment variable.
 
 **Start the serving application:**
 
@@ -168,6 +144,10 @@ python tests/test_wine_classifier.py
 
 Or use the interactive Swagger UI at `http://localhost:8000/docs`
 
+### Production Training
+
+Trigger the workflow dispatch in Github Actions at `https://github.com/OpenCloudHub/ai-ml-sklearn/actions/workflows/train.yaml`
+
 ______________________________________________________________________
 
 <h2 id="project-structure">📁 Project Structure</h2>
@@ -183,8 +163,8 @@ ai-ml-sklearn/
 │   │   └── wine_classifier.py
 │   └── _utils/                         # Shared utilities
 │       ├── get_or_create_experiment.py
-│       ├── logging_callback.py
-│       └── logging_config.py
+│       ├── logging_config.py
+│       └── mlflow_tags.py
 ├── tests/                              # Unit tests
 ├── .devcontainer/                      # VS Code DevContainer config
 ├── .github/workflows/                  # CI/CD workflows
@@ -193,33 +173,6 @@ ai-ml-sklearn/
 ├── pyproject.toml                      # Project dependencies and config
 └── uv.lock                             # Dependency lock file
 ```
-
-______________________________________________________________________
-
-<h2 id="mlops-pipeline">🔄 MLOps Pipeline</h2>
-
-1. **Development & Experimentation**
-
-   - Local development in DevContainers
-   - Jupyter notebooks for data exploration
-   - MLflow experiment tracking
-
-1. **Training & Optimization**
-
-   - Distributed training and hyperparameter tuning with Ray and Optuna
-   - Model evaluation and metrics logging
-   - Threshold-based model registration
-
-1. **Model Registry**
-
-   - Automatic promotion to staging registry
-   - Model versioning and lineage tracking
-   - Performance comparison and rollback capability
-
-1. **Deployment**
-
-   - Ray Serve for scalable, production-ready model serving
-   - (Planned) KServe integration and GitOps-based deployment automation
 
 ______________________________________________________________________
 
