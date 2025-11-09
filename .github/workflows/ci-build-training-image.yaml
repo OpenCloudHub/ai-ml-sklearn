@@ -1,5 +1,4 @@
 name: CI Build Training Image
-
 on:
   push:
     branches: [main]
@@ -12,6 +11,7 @@ on:
 
 jobs:
   docker-build:
+    # Call the shared workflow
     uses: opencloudhub/.github/.github/workflows/shared-ci-docker-build-push.yaml@main
     with:
       repo-name: "wine-classifier-training"

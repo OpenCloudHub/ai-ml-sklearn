@@ -1,8 +1,7 @@
-# src/serving/wine_classifier.py
 import os
 from typing import List
 
-import mlflow.tracking._tracking_service.client
+import mlflow
 import numpy as np
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
@@ -12,10 +11,9 @@ from _utils.logging_config import setup_logging
 
 logger = setup_logging()
 
-# FastAPI app
 app = FastAPI(
     title="🍷 Wine Classifier API",
-    description="ML model for wine classification using MLflow and Ray Serve",
+    description="ML model endpoint example for wine classification using MLflow and Ray Serve",
     version="1.0.0",
 )
 
@@ -72,6 +70,15 @@ class PredictionResponse(BaseModel):
     model_version: str
 
 
+class RootResponse(BaseModel):
+    """Response model for root endpoint"""
+
+    status: str
+    model: str
+    features_expected: int
+    output_classes: List[str]
+
+
 @serve.deployment(
     # Example autoscaling configuration
     # autoscaling_config={
@@ -82,24 +89,25 @@ class PredictionResponse(BaseModel):
 )
 @serve.ingress(app)
 class WineClassifier:
-    """Wine Classifier API with baked-in model"""
+    """Wine Classifier API.
+
+    Serves a pre-trained wine classification model from MLflow and provides
+    endpoints for health checks and predictions."""
 
     def __init__(self):
-        # Load model from local filesystem (baked into image)
         model_path = os.getenv("MODEL_PATH", "/workspace/project/model")
         self.model_name = os.getenv("MODEL_NAME", "unknown")
-        self.model_version = os.getenv("MODEL_VERSION", "unknown")
-        self.git_commit = os.getenv("GIT_COMMIT", "unknown")
         self.model = mlflow.sklearn.load_model(model_path)
-        self
-        logger.info(
-            f"Loaded model '{self.model_name}' version '{self.model_version}' from {model_path}"
-        )
+        logger.info(f"Loaded model '{self.model_name}' from {model_path}")
 
-    @app.get("/", summary="Health Check")
+    @app.get("/", response_model=RootResponse, summary="Health Check")
     async def root(self):
-        """Health check endpoint"""
-        return {"message": "Wine Classifier API is running", "status": "healthy"}
+        return {
+            "status": "healthy",
+            "model": self.model_name,
+            "features_expected": 13,
+            "output_classes": ["0", "1", "2"],
+        }
 
     @app.post(
         "/predict", response_model=PredictionResponse, summary="Predict Wine Class"
@@ -118,19 +126,8 @@ class WineClassifier:
         return PredictionResponse(
             predictions=predictions.tolist(),
             model_name=self.model_name,
-            model_version=self.model_version,
         )
 
-    @app.get("/model/info", summary="Model Information")
-    async def model_info(self):
-        """Get information about the current model"""
-        return {
-            "model_name": self.model_name,
-            "model_version": self.model_version,
-            "git_commit": self.git_commit,
-            "features_expected": 13,
-            "output_classes": ["0", "1", "2"],
-        }
 
-
+# Ray Serve deployment
 deployment = WineClassifier.bind()

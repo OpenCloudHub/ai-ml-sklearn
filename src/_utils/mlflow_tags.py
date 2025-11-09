@@ -45,25 +45,3 @@ def set_mlflow_experiment_tags(additional_tags: Optional[dict] = None) -> None:
         tags.update(additional_tags)
 
     mlflow.set_tags(tags)
-
-
-# def set_mlflow_model_tags(
-#     model_name: str, model_version: str, additional_tags: Optional[dict] = None
-# ) -> None:
-#     """
-#     Tag a registered model version with lifecycle metadata.
-
-#     Args:
-#         model_name: Registered model name (e.g., "ci.wine-classifier")
-#         model_version: Model version number
-#         additional_tags: Optional dict of additional tags
-#     """
-#     client = mlflow.MlflowClient()
-
-#     tags = _get_lifecycle_tags()
-
-#     if additional_tags:
-#         tags.update(additional_tags)
-
-#     for key, value in tags.items():
-#         client.set_model_version_tag(model_name, model_version, key, value)

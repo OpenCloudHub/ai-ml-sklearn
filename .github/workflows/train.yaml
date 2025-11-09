@@ -1,48 +1,4 @@
-# name: 🍷 Train Wine Classifier
-
-# on:
-#   workflow_dispatch:
-#     inputs:
-#       compute_type:
-#         description: 'Compute configuration'
-#         required: true
-#         type: choice
-#         options:
-#           - 'cpu-light'      # 1 worker, 1 CPU, 2Gi RAM
-#           - 'cpu-medium'     # 1 worker, 2 CPU, 4Gi RAM
-#           - 'cpu-heavy'      # 2 workers, 2 CPU, 4Gi RAM each
-#           - 'gpu-small'      # 1 GPU worker, 2 CPU, 8Gi RAM, 1 GPU
-#           - 'gpu-medium'     # 1 GPU worker, 4 CPU, 16Gi RAM, 1 GPU
-#         default: 'cpu-medium'
-#       entrypoint:
-#         description: 'Training script entrypoint'
-#         required: true
-#         default: 'python src/training/train.py'
-#         type: string
-#       extra_args:
-#         description: 'Additional arguments (e.g., --epochs 50 --batch-size 32)'
-#         required: false
-#         type: string
-#       experiment_name:
-#         description: 'MLflow experiment name'
-#         required: false
-#         default: wine-quality
-#         type: string
-
-# jobs:
-#   train:
-#     name: Wine Classifier Training
-#     uses: opencloudhub/.github/.github/workflows/shared-training-ray.yaml@main
-#     with:
-#       compute_type: ${{ inputs.compute_type }}
-#       docker_image: "opencloudhuborg/wine-classifier-training:latest"
-#       entrypoint: ${{ inputs.entrypoint }}
-#       extra_args: ${{ inputs.extra_args }}
-#       experiment_name: ${{ inputs.experiment_name }}
-#     secrets: inherit
-
 name: Train Model
-# TODO: check the required true/false stuff
 on:
   workflow_dispatch:
     inputs:
@@ -78,7 +34,7 @@ on:
         default: 'manual'
       comparison_metric:
         description: 'Metric to compare models, mind of pre and suffixes'
-        required: false
+        required: true
         type: string
         default: 'training_accuracy_score'
       higher_is_better:
@@ -87,12 +43,13 @@ on:
         default: true
       comparison_threshold:
         description: 'Minimum improvement threshold (0.05 = 5%)'
-        required: false
+        required: true
         type: string
         default: '0.05'
 
 jobs:
   train:
+    # Call shared workflow
     uses: opencloudhub/.github/.github/workflows/shared-argo-ml-workflow.yaml@main
     with:
       repo_name: ${{ github.event.repository.name }}

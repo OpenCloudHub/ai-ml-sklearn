@@ -86,7 +86,6 @@ ENV VIRTUAL_ENV="/workspace/project/.venv" \
     PYTHONPATH="/workspace/project/src" \
     MODEL_PATH="/workspace/project/model" \
     MODEL_NAME="${MODEL_NAME}" \
-    MODEL_VERSION="${MODEL_VERSION}" \
     ENVIRONMENT=production
 
 # Download staging model from MLflow at build time
