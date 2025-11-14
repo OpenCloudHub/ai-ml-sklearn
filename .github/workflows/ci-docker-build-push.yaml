@@ -6,7 +6,7 @@ on:
       - 'Dockerfile'
       - 'pyproject.toml'
       - 'uv.lock'
-      - '.github/workflows/ci-build-training-image.yaml'
+      - '.github/workflows/ci-docker-build-push.yaml'
       - 'src/**'
 
 jobs:
@@ -14,10 +14,10 @@ jobs:
     # Call the shared workflow
     uses: opencloudhub/.github/.github/workflows/shared-ci-docker-build-push.yaml@main
     with:
-      repo-name: "wine-classifier-training"
+      repo-name: "wine-classifier"
       context: "."
       dockerfile: "Dockerfile"
-      target: "training"
+      target: "prod"
       push-on-pr: true
     secrets:
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}

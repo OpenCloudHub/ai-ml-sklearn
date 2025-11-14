@@ -107,42 +107,33 @@ You're now ready to develop, train and serve models locally!
 **Basic training:**
 
 ```bash
-python src/training/train.py --C 1.0 --max_iter 100 --solver lbfgs
+python src/train.py --C 0.9
 ```
 
-or
+or use the Job API like we would do in practise too
 
 ```bash
-RAY_ADDRESS='http://127.0.0.1:8265' ray job submit --working-dir . -- python src/training/train.py
-```
-
-**Hyperparameter optimization:**
-
-```bash
-python src/training/optimize_hyperparameters.py --n_trials 50 --test_size 0.2
+RAY_ADDRESS='http://127.0.0.1:8265' ray job submit --working-dir . -- python src/train.py
 ```
 
 ### Model Serving
 
-Ensure you have a trained model to load either from local folder or from mlflow by setting the 'MODEL_PATH' environment variable.
+Ensure you have a trained model to load either from local folder or from mlflow by setting the 'MODEL_URI' environment variable.
 
 **Start the serving application:**
 
 ```bash
-serve run src.serving.wine_classifier:deployment
+serve run src.serve:app_builder model_uri="models:/ci.wine-classifier/7" --reload
+```
+
+or even better and more production ready, run:
+
+```bash
+serve build src.serve:app_builder -o src/serve_config.yaml
+serve deploy src/serve_config.yaml
 ```
 
 Access Swagger docs at `http://localhost:8000/docs`
-
-### Testing
-
-**Test the deployed endpoint:**
-
-```bash
-python tests/test_wine_classifier.py
-```
-
-Or use the interactive Swagger UI at `http://localhost:8000/docs`
 
 ### Production Training
 

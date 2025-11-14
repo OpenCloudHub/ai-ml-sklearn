@@ -21,7 +21,7 @@ ENV UV_COMPILE_BYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PATH="/workspace/project/.venv/bin:$PATH" \
-    PYTHONPATH="/workspace/project:/workspace/project/src"
+    PYTHONPATH="/workspace/project"
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -42,8 +42,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 ENV ENVIRONMENT=development
 
 #==============================================================================#
-# Stage: Training - Ray base with training code
-FROM rayproject/ray:${RAY_VERSION}-${RAY_PY_TAG} AS training
+# Serves both for training and serving, could be separated if needed
+FROM rayproject/ray:${RAY_VERSION}-${RAY_PY_TAG} AS prod
 
 WORKDIR /workspace/project
 
@@ -57,36 +57,5 @@ COPY src/ ./src/
 
 ENV VIRTUAL_ENV="/workspace/project/.venv" \
     PATH="/workspace/project/.venv/bin:$PATH" \
-    PYTHONPATH="/workspace/project/src" \
+    PYTHONPATH="/workspace/project" \
     ENVIRONMENT=production
-
-#==============================================================================#
-# Stage: Serving - Includes baked-in model weights
-FROM rayproject/ray:${RAY_VERSION}-${RAY_PY_TAG} AS serving
-
-ARG MLFLOW_TRACKING_URI
-ARG MODEL_NAME
-ARG MODEL_VERSION
-
-WORKDIR /workspace/project
-
-COPY --from=uv /usr/local/bin/uv /usr/local/bin/uv
-COPY pyproject.toml uv.lock ./
-
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --no-dev
-
-# Copy only serving code (not training)
-COPY src/serving/ ./src/serving/
-COPY src/_utils/ ./src/_utils/
-
-# Set environment variables
-ENV VIRTUAL_ENV="/workspace/project/.venv" \
-    PATH="/workspace/project/.venv/bin:$PATH" \
-    PYTHONPATH="/workspace/project/src" \
-    MODEL_PATH="/workspace/project/model" \
-    MODEL_NAME="${MODEL_NAME}" \
-    ENVIRONMENT=production
-
-# Download staging model from MLflow at build time
-RUN python -c "import mlflow; mlflow.set_tracking_uri('${MLFLOW_TRACKING_URI}'); mlflow.artifacts.download_artifacts(artifact_uri='models:/staging.${MODEL_NAME}/${MODEL_VERSION}', dst_path='/workspace/project/model'); print('✅ Model ${MODEL_NAME} v${MODEL_VERSION} downloaded')"
