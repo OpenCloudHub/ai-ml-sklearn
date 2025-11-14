@@ -12,9 +12,9 @@ class BaseConfig(BaseSettings):
     dvc_data_path: str = "data/wine-quality/processed/wine-quality.csv"
     dvc_metrics_path: str = "data/wine-quality/processed/metadata.json"
 
-    # MLflow tags for workflow tagging
-    argo_workflow_uid: str
-    docker_image_tag: str
+    # Optional: Workflow metadata (only set during training in Argo)
+    argo_workflow_uid: str | None = None
+    docker_image_tag: str | None = None
 
     random_state: int = 42
 
