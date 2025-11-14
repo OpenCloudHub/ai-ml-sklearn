@@ -92,7 +92,7 @@ class HealthResponse(BaseModel):
     autoscaling_config={"min_replicas": 1, "max_replicas": 3},
 )
 @serve.ingress(app)
-class WineQualityClassifier:
+class WineClassifier:
     def __init__(self, model_uri: str | None = None):
         """Initialize the classifier, optionally with a model URI."""
         self.model = None
@@ -276,4 +276,4 @@ class AppBuilderArgs(BaseModel):
 
 def app_builder(args: AppBuilderArgs) -> Application:
     """Helper function to build the deployment with optional model URI."""
-    return WineQualityClassifier.bind(model_uri=args.model_uri)
+    return WineClassifier.bind(model_uri=args.model_uri)
