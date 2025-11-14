@@ -6,14 +6,14 @@ on:
         description: 'Training script entrypoint'
         required: false
         type: string
-        default: 'python src/training/train.py'
+        default: 'python src/train.py'
       dvc_data_version:
         description: 'DVC Registry tag for data version (e.g "wine-quality-v0.1.1")'
         required: true
         type: string
         default: 'wine-quality-v0.1.1'
       training_args:
-        description: 'Additional training arguments'
+        description: 'Additional training arguments (e.g --C 0.9 --max-iter 90 --run-name test123)'
         required: false
         type: string
         default: ''
@@ -66,7 +66,7 @@ jobs:
       comparison_metric: ${{ inputs.comparison_metric }}
       higher_is_better: ${{ inputs.higher_is_better}}
       comparison_threshold: ${{ inputs.comparison_threshold }}
-      training_image: "opencloudhuborg/wine-classifier-training:latest"
+      training_image: "opencloudhuborg/wine-classifier:latest"
       training_entrypoint: ${{ inputs.training_entrypoint }}
       training_args: ${{ inputs.training_args }}
     secrets: inherit
