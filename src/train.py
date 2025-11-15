@@ -116,9 +116,10 @@ def main():
         registered_model_name = BASE_CNFG.mlflow_registered_model_name
         mlflow.sklearn.log_model(
             pipeline,
-            "model",
+            name="model",
             registered_model_name=registered_model_name,
             input_example=X_val[:1],
+            # tags=
         )
         print(f"Model registered as: {registered_model_name}")
 

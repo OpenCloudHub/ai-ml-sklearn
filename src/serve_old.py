@@ -1,6 +1,8 @@
+import json
 from datetime import datetime, timezone
 from typing import List
 
+import dvc.api
 import mlflow
 import numpy as np
 from fastapi import FastAPI, HTTPException
@@ -55,6 +57,27 @@ class ModelInfo(BaseModel):
     run_id: str = Field(..., description="MLflow run ID associated with the model")
     data_version: str = Field(..., description="DVC data version used for training")
     model_signature: str | None = Field(None, description="MLflow model signature")
+    expected_features: List[str] = Field(
+        default=[
+            "fixed acidity",
+            "volatile acidity",
+            "citric acid",
+            "residual sugar",
+            "chlorides",
+            "free sulfur dioxide",
+            "total sulfur dioxide",
+            "density",
+            "pH",
+            "sulphates",
+            "alcohol",
+            "wine_type",
+        ],
+        description="Expected feature names in order",
+    )
+    quality_range: List[int] = Field(
+        default=[3, 9],
+        description="Possible quality score range",
+    )
 
 
 class HealthResponse(BaseModel):
@@ -104,16 +127,34 @@ class WineClassifier:
 
         logger.info(f"📊 Using data version: {self.data_version}")
 
+        # Fetch metadata from DVC to get feature info
+
+        metadata_content = dvc.api.read(
+            "data/wine-quality/processed/metadata.json",
+            repo="https://github.com/OpenCloudHub/data-registry",
+            rev=self.data_version,
+        )
+        self.metadata = json.loads(metadata_content)
+
+        logger.info(f"📊 Dataset: {self.metadata['dataset']['name']}")
+        logger.info(f"   Features: {self.metadata['summary']['num_features']}")
+        logger.info(f"   Quality range: {self.metadata['schema']['target']['range']}")
+
         # Load the model
         self.model = mlflow.sklearn.load_model(model_uri)
 
         # Build ModelInfo
+        feature_names = list(self.metadata["schema"]["features"].keys())
+        quality_range = self.metadata["schema"]["target"]["range"]
+
         self.model_info = ModelInfo(
             model_uri=model_uri,
             model_uuid=info.model_uuid,
             run_id=info.run_id,
             data_version=self.data_version,
             model_signature=str(info.signature) if info.signature else None,
+            expected_features=feature_names,
+            quality_range=quality_range,
         )
 
         logger.info("✅ Model loaded successfully")

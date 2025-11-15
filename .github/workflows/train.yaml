@@ -1,28 +1,35 @@
 name: Submit Model Training
+
 on:
   workflow_dispatch:
     inputs:
-      training_entrypoint:
-        description: 'Training script entrypoint'
-        required: false
-        type: string
-        default: 'python src/train.py'
       dvc_data_version:
         description: 'DVC Registry tag for data version (e.g "wine-quality-v0.1.1")'
         required: true
         type: string
         default: 'wine-quality-v0.1.1'
+      training_entrypoint:
+        description: 'Training script entrypoint'
+        required: false
+        type: string
+        default: 'python src/train.py'
       training_args:
         description: 'Additional training arguments (e.g --C 0.9 --max-iter 90 --run-name test123)'
         required: false
         type: string
         default: ''
+      image_tag:
+        description: 'Docker image tag (latest, main-abc1234, etc.)'
+        required: false
+        type: string
+        default: 'latest'
       compute_type:
         description: 'Compute configuration'
         required: true
         type: choice
         options:
           - 'cpu-small'
+          - 'cpu-small-distributed'
           - 'cpu-medium'
           - 'cpu-large'
           - 'gpu-small'
@@ -42,7 +49,7 @@ on:
         required: true
         type: string
         default: 'training_accuracy_score'
-      higher_is_better:
+      comparison_higher_is_better:
         description: "Higher metric value is better."
         type: boolean
         default: true
@@ -54,19 +61,17 @@ on:
 
 jobs:
   train:
-    # Call shared workflow
     uses: opencloudhub/.github/.github/workflows/shared-argo-ml-workflow.yaml@main
     with:
-      repo_name: ${{ github.event.repository.name }}
       model_name: "wine-classifier"
-      experiment_name: "wine-quality"
       dvc_data_version: ${{ inputs.dvc_data_version }}
+      experiment_name: "wine-quality"
+      training_entrypoint: ${{ inputs.training_entrypoint }}
+      training_args: ${{ inputs.training_args }}
+      image_tag: ${{ inputs.image_tag }}
       compute_type: ${{ inputs.compute_type }}
       approval_mode: ${{ inputs.approval_mode }}
       comparison_metric: ${{ inputs.comparison_metric }}
-      higher_is_better: ${{ inputs.higher_is_better}}
+      comparison_higher_is_better: ${{ inputs.comparison_higher_is_better }}
       comparison_threshold: ${{ inputs.comparison_threshold }}
-      training_image: "opencloudhuborg/wine-classifier:latest"
-      training_entrypoint: ${{ inputs.training_entrypoint }}
-      training_args: ${{ inputs.training_args }}
     secrets: inherit
