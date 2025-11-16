@@ -11,7 +11,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 from src._utils.logging import get_logger, log_section
-from src.config import TRAINING_CONFIG, WORKFLOW_TAGS
+from src.training.config import TRAINING_CONFIG, WORKFLOW_TAGS
 from src.training.data import load_data
 
 logger = get_logger(__name__)

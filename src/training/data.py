@@ -8,7 +8,7 @@ import s3fs
 from sklearn.model_selection import train_test_split
 
 from src._utils.logging import get_logger, log_section
-from src.config import TRAINING_CONFIG
+from src.training.config import TRAINING_CONFIG
 
 logger = get_logger(__name__)
 

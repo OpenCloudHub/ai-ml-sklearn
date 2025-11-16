@@ -8,7 +8,7 @@ import numpy as np
 from pydantic import AfterValidator, BaseModel, Field
 
 from src._utils.logging import get_logger
-from src.config import SERVING_CONFIG
+from src.serving.config import SERVING_CONFIG
 
 logger = get_logger(__name__)
 

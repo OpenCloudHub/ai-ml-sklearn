@@ -37,14 +37,6 @@ class TrainingConfig(BaseSettings):
     random_state: int = 42
 
 
-class ServingConfig(BaseSettings):
-    """Configuration for the model serving application."""
-
-    expected_num_features: int = 12
-    request_max_length: int = 1000
-
-
 # Singleton config instance
 TRAINING_CONFIG = TrainingConfig()
 WORKFLOW_TAGS = WorkflowTags()
-SERVING_CONFIG = ServingConfig()
