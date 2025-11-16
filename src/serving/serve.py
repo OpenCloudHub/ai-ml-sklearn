@@ -177,7 +177,7 @@ class WineClassifier:
         if self.status != APIStatus.HEALTHY:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=response.to_dict(),
+                detail=response.model_dump(),
             )
 
         return response
