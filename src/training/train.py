@@ -47,6 +47,7 @@ def train(X_train, y_train, X_val, y_val, C, max_iter, solver):
 
 
 def main():
+    """Run training pipeline"""
     parser = argparse.ArgumentParser()
     parser.add_argument("--C", type=float, default=1.0)
     parser.add_argument("--max-iter", type=int, default=100)
