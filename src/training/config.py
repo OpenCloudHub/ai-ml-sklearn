@@ -32,7 +32,7 @@ class TrainingConfig(BaseSettings):
     # DVC repository URL
     dvc_repo: str = "https://github.com/OpenCloudHub/data-registry"
     dvc_data_path: str = "data/wine-quality/processed/wine-quality.csv"
-    dvc_metrics_path: str = "data/wine-quality/processed/metadata.json"
+    dvc_metrics_path: str = "data/wine-quality/metadata.json"
 
     random_state: int = 42
 

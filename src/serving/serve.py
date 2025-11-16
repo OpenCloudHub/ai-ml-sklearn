@@ -67,9 +67,7 @@ class WineClassifier:
             run = client.get_run(info.run_id)
 
             # Extract data version and training timestamp
-            data_version = run.data.params.get(
-                "dvc_data_version"
-            ) or run.data.params.get("data_version")
+            data_version = run.data.params.get("dvc_data_version")
             training_timestamp = datetime.fromtimestamp(
                 run.info.start_time / 1000.0, tz=timezone.utc
             )
