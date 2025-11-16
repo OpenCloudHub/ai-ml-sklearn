@@ -8,7 +8,7 @@ import s3fs
 from sklearn.model_selection import train_test_split
 
 from src._utils.logging import get_logger, log_section
-from src.config import BASE_CNFG
+from src.config import TRAINING_CONFIG
 
 logger = get_logger(__name__)
 
@@ -27,17 +27,17 @@ def load_data(
         Tuple of (X_train, y_train, X_val, y_val, metadata)
     """
     log_section(f"Loading Data Version {version}", "📦")
-    logger.info(f"DVC repo: [cyan]{BASE_CNFG.dvc_repo}[/cyan]")
+    logger.info(f"DVC repo: [cyan]{TRAINING_CONFIG.dvc_repo}[/cyan]")
 
     # Get URLs from DVC
     data_path = dvc.api.get_url(
-        BASE_CNFG.dvc_data_path,
-        repo=BASE_CNFG.dvc_repo,
+        TRAINING_CONFIG.dvc_data_path,
+        repo=TRAINING_CONFIG.dvc_repo,
         rev=version,
     )
 
     metadata_content = dvc.api.read(
-        BASE_CNFG.dvc_metrics_path, repo=BASE_CNFG.dvc_repo, rev=version
+        TRAINING_CONFIG.dvc_metrics_path, repo=TRAINING_CONFIG.dvc_repo, rev=version
     )
     metadata = json.loads(metadata_content)
 
@@ -74,7 +74,7 @@ def load_data(
         y,
         train_size=train_size,
         shuffle=shuffle,
-        random_state=BASE_CNFG.random_state,
+        random_state=TRAINING_CONFIG.random_state,
     )
 
     logger.success("✨ Data loaded and split")

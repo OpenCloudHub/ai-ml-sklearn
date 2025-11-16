@@ -12,7 +12,7 @@ import requests
 # Add src to path so we can import data loading
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from src.data import load_data
+from src.training.data import load_data
 
 BASE_URL = "http://localhost:8000"
 

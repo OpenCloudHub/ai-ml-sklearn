@@ -10,9 +10,9 @@ from sklearn.metrics import accuracy_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from src._utils.logging import get_logger
-from src.config import BASE_CNFG
-from src.data import load_data
+from src._utils.logging import get_logger, log_section
+from src.config import TRAINING_CONFIG, WORKFLOW_TAGS
+from src.training.data import load_data
 
 logger = get_logger(__name__)
 
@@ -29,7 +29,7 @@ def train(X_train, y_train, X_val, y_val, C, max_iter, solver):
                     C=C,
                     max_iter=max_iter,
                     solver=solver,
-                    random_state=BASE_CNFG.random_state,
+                    random_state=TRAINING_CONFIG.random_state,
                     multi_class="auto",
                 ),
             ),
@@ -48,55 +48,61 @@ def train(X_train, y_train, X_val, y_val, C, max_iter, solver):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--data-version",
-        required=True,
-        help="Version of the data to use for training(e.g. wine-quality-v0.0.2)",
-    )
     parser.add_argument("--C", type=float, default=1.0)
     parser.add_argument("--max-iter", type=int, default=100)
     parser.add_argument("--solver", default="lbfgs")
     parser.add_argument("--run-name", default=None)
     args = parser.parse_args()
 
+    log_section("Training Configuration", "⚙️")
+    logger.info(f"C: {args.C}")
+    logger.info(f"Max iterations: {args.max_iter}")
+    logger.info(f"Solver: {args.solver}")
+
+    log_section("CI/CD Data Contract from ENV", "📋")
+    logger.info(f"Argo Workflow UID: {WORKFLOW_TAGS.argo_workflow_uid}")
+    logger.info(f"Docker image tag: {WORKFLOW_TAGS.docker_image_tag}")
+    logger.info(f"DVC data version: {WORKFLOW_TAGS.dvc_data_version}")
+
     # Setup Ray
     ray.init(address="auto", ignore_reinit_error=True)
     register_ray()
 
     # Load data
-    logger.info(f"Loading data version: {args.data_version}")
-    X_train, y_train, X_val, y_val, metadata = load_data(args.data_version)
+    logger.info(f"Loading data version: {WORKFLOW_TAGS.dvc_data_version}")
+    X_train, y_train, X_val, y_val, metadata = load_data(WORKFLOW_TAGS.dvc_data_version)
     logger.info(f"Train size: {len(X_train)}, Validation size: {len(X_val)}")
 
     # Setup MLflow
-    mlflow.set_experiment(BASE_CNFG.mlflow_experiment_name)
+    mlflow.set_experiment(TRAINING_CONFIG.mlflow_experiment_name)
     run_name = args.run_name or f"train_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
-    # Create workflow tags
+    # ⚠️ IMPORTANT: Tag training rune with workflow tags
     workflow_tags = {
-        "argo_workflow_uid": BASE_CNFG.argo_workflow_uid,
-        "docker_image_tag": BASE_CNFG.docker_image_tag,
-        "dvc_data_version": args.data_version,
+        "argo_workflow_uid": WORKFLOW_TAGS.argo_workflow_uid,
+        "docker_image_tag": WORKFLOW_TAGS.docker_image_tag,
+        "dvc_data_version": WORKFLOW_TAGS.dvc_data_version,
     }
 
     with mlflow.start_run(
         run_name=run_name, log_system_metrics=True, tags=workflow_tags
     ):
+        log_section("Starting MLflow Run", "🚀")
         mlflow.sklearn.autolog(log_models=False)
         # Log DVC metadata as parameters for traceability
         mlflow.log_params(
             {
-                "dvc_repo": BASE_CNFG.dvc_repo,
-                "dvc_data_path": BASE_CNFG.dvc_data_path,
-                "dvc_metrics_path": BASE_CNFG.dvc_metrics_path,
-                "dvc_data_version": args.data_version,
+                "dvc_repo": TRAINING_CONFIG.dvc_repo,
+                "dvc_data_path": TRAINING_CONFIG.dvc_data_path,
+                "dvc_metrics_path": TRAINING_CONFIG.dvc_metrics_path,
+                "dvc_data_version": WORKFLOW_TAGS.dvc_data_version,
             }
         )
         # Log data metrics from DVC as a JSON artifact
         mlflow.log_dict(metadata, "data_metadata.json")
 
         # Train
-        print(
+        logger.info(
             f"Training with C={args.C}, max_iter={args.max_iter}, solver={args.solver}"
         )
         pipeline, accuracy, X_val, y_val = train(
@@ -109,11 +115,13 @@ def main():
             solver=args.solver,
         )
 
-        print(f"Train accuracy: {accuracy:.4f}")
+        log_section("Training Results", "📊")
+        logger.info(f"Train accuracy: {accuracy:.4f}")
         mlflow.log_metric("train_acc", accuracy)
 
         # Log model
-        registered_model_name = BASE_CNFG.mlflow_registered_model_name
+        log_section("Logging Model to MLflow", "💾")
+        registered_model_name = TRAINING_CONFIG.mlflow_registered_model_name
         mlflow.sklearn.log_model(
             pipeline,
             name="model",
@@ -121,9 +129,9 @@ def main():
             input_example=X_val[:1],
             # tags=
         )
-        print(f"Model registered as: {registered_model_name}")
+        logger.info(f"Model registered as: {registered_model_name}")
 
-    print("✅ Done!")
+    logger.success("✅ Done!")
 
 
 if __name__ == "__main__":
