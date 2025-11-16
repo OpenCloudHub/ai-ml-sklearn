@@ -7,7 +7,7 @@ on:
         description: 'DVC Registry tag for data version (e.g "wine-quality-v0.1.1")'
         required: true
         type: string
-        default: 'wine-quality-v0.1.1'
+        default: 'wine-quality-v0.2.0'
       training_entrypoint:
         description: 'Training script entrypoint'
         required: false
