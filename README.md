@@ -147,20 +147,24 @@ ______________________________________________________________________
 This project relies on a small CI/CD "data contract" provided via environment variables ("workflow tags") that must be present for automated and reproducible training runs and correct MLflow tagging. Follow these rules:
 
 - Required workflow tags (set by Argo workflows in production):
+
   - ARGO_WORKFLOW_UID — unique identifier for the workflow run (use "DEV" for local dev)
   - DOCKER_IMAGE_TAG — image tag used for the training run (use "DEV" for local dev)
   - DVC_DATA_VERSION — DVC data version (e.g. wine-quality-v0.2.0). NOTE: this should take precedence over any CLI --data-version argument.
 
 - Why these matter:
+
   - All training runs are automatically tagged in MLflow with the workflow tags (ARGO_WORKFLOW_UID, DOCKER_IMAGE_TAG, DVC_DATA_VERSION) so you can trace models back to the exact pipeline and dataset.
   - The training code reads DVC_DATA_VERSION from the environment and will prefer it over CLI args to ensure reproducible CI/CD runs.
   - If DVC_DATA_VERSION is not supplied in CI, the training run may not match the intended dataset version.
 
 - Data provenance:
+
   - Training data and metadata are versioned in a DVC registry. The code loads data via DVC and reads artifacts from the MinIO S3-compatible bucket.
   - The training job logs the DVC metadata (metadata.json) into MLflow as an artifact so datasets are traceable.
 
 - MinIO (S3) credentials required:
+
   - The runtime needs access to the MinIO bucket where DVC stores artifacts. Provide the following environment variables (examples in .env.sample):
     - AWS_ACCESS_KEY_ID
     - AWS_SECRET_ACCESS_KEY
@@ -168,6 +172,7 @@ This project relies on a small CI/CD "data contract" provided via environment va
   - In Kubernetes/Argo, these are provided from secrets (see training workflow template). Locally, create a `.env` or export these variables.
 
 - Local development notes:
+
   - For local development you can set workflow tags to "DEV" (except DVC_DATA_VERSION which you should set to the dataset tag you want to use, or leave blank and pass --data-version locally).
   - Example .env usage:
     ```
@@ -177,16 +182,18 @@ This project relies on a small CI/CD "data contract" provided via environment va
   - When running training locally you can still pass --data-version; CI will override it when DVC_DATA_VERSION is set in the env.
 
 - MLflow tagging policy:
+
   - Always include workflow tags on MLflow runs. The training entrypoint in src/training/train.py already applies these tags automatically:
     - argo_workflow_uid, docker_image_tag, dvc_data_version
   - This lets you filter experiments by workflow run, image tag and dataset version in the MLflow UI.
 
 - Quick checklist before submitting a training run in CI:
+
   1. Ensure Docker image with code is published and DOCKER_IMAGE_TAG is set.
-  2. Ensure ARGO_WORKFLOW_UID is set by the workflow.
-  3. Ensure DVC_DATA_VERSION points to the correct dataset version.
-  4. Ensure MinIO credentials (accesskey/secretkey and endpoint) are available to the job.
-  5. If developing locally and running Minio on local kind cluster and attaching your devcontainer to the host network, you might need to rebuild this container after cluster restarts
+  1. Ensure ARGO_WORKFLOW_UID is set by the workflow.
+  1. Ensure DVC_DATA_VERSION points to the correct dataset version.
+  1. Ensure MinIO credentials (accesskey/secretkey and endpoint) are available to the job.
+  1. If developing locally and running Minio on local kind cluster and attaching your devcontainer to the host network, you might need to rebuild this container after cluster restarts
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
