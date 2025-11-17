@@ -22,7 +22,7 @@ from src.serving.schemas import (
 logger = get_logger(__name__)
 
 app = FastAPI(
-    title="🍷 Wine Quality Classifier API",
+    title="🍷 Wine Quality Classifier API.",
     description="Wine Quality classification using Ray Serve + MLflow",
     version="1.0.0",
 )
