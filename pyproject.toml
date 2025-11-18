@@ -5,20 +5,37 @@ description = "Example model training and serving with ray, mlflow, sklearn and 
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    # Shared dependencies (both training and serving)
     "dvc[s3]>=3.64.0",
-    "fastapi>=0.116.1",
     "joblib>=1.5.1",
     "mlflow>=3.2.0",
-    "optuna>=4.4.0",
     "pandas>=2.3.1",
     "pydantic-settings>=2.12.0",
-    "ray[default,serve]>=2.48.0",
+    "ray[default]>=2.48.0",
     "scikit-learn>=1.7.1",
+]
+
+[project.optional-dependencies]
+# Training-specific dependencies
+training = [
+    "optuna>=4.4.0",
     "seaborn>=0.13.2",
     "shap>=0.48.0",
 ]
-[dependency-groups]
+
+# Serving-specific dependencies
+serving = [
+    "ray[serve]>=2.48.0",
+    "fastapi>=0.116.1",
+]
+
+# Development dependencies
 dev = [
     "pre-commit>=4.3.0",
     "ruff>=0.12.8",
 ]
+
+[tool.uv]
+concurrent-builds = 4  # sklearn is lightweight, can parallelize
+concurrent-downloads = 8
+concurrent-installs = 4
