@@ -29,7 +29,8 @@ serving = [
     "fastapi>=0.116.1",
 ]
 
-# Development dependencies
+[dependency-groups]
+# Development dependencies (local-only, not published)
 dev = [
     "pre-commit>=4.3.0",
     "ruff>=0.12.8",

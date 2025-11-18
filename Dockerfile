@@ -32,7 +32,7 @@ FROM uv_base AS dev
 COPY pyproject.toml uv.lock ./
 
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --all-extras --no-install-project
+    uv sync --all-extras --all-groups --no-install-project
 
 ENV ENVIRONMENT=development
 
