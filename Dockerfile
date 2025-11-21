@@ -38,7 +38,7 @@ WORKDIR /workspace/project
 # Install system deps for building packages
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    build-essential git curl \
+    build-essential git curl wget \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 COPY --from=uv_base /usr/local/bin/uv /usr/local/bin/uv
