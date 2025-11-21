@@ -31,23 +31,18 @@ COPY pyproject.toml uv.lock ./
 ENV ENVIRONMENT=development
 
 #==============================================================================#
-# Stage: TRAINING (slim base + ray[train])
-FROM python:3.12-slim-bookworm AS training
+# Stage: TRAINING (ray[train])
+FROM rayproject/ray:${RAY_VERSION}-${RAY_PY_TAG} AS training
 WORKDIR /workspace/project
 
-# Install system deps for building packages
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    build-essential git curl wget \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
-
+USER ray
 COPY --from=uv_base /usr/local/bin/uv /usr/local/bin/uv
 COPY pyproject.toml uv.lock ./
 
-RUN --mount=type=cache,target=/root/.cache/uv \
+RUN --mount=type=cache,target=/home/ray/.cache/uv,uid=1000,gid=1000 \
     uv sync --extra training --no-dev --no-install-project
 
-COPY src/ ./src/
+COPY --chown=ray:ray src/ ./src/
 
 ENV VIRTUAL_ENV="/workspace/project/.venv" \
     PATH="/workspace/project/.venv/bin:$PATH" \
