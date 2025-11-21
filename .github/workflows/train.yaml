@@ -1,4 +1,4 @@
-name: Submit Model Training
+name: MLOPS Pipeline
 
 on:
   workflow_dispatch:
