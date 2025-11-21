@@ -40,7 +40,7 @@ ______________________________________________________________________
 
 <h2 id="about">🍷 About</h2>
 
-This repository demonstrates an example implementation for wine classification using scikit-learn and the UCI Wine dataset. It showcases combining machine learning practices including experiment tracking, hyperparameter optimization, model registration, and containerized deployment and serves as demonstration within the OpenCloudHub project.\\
+This repository demonstrates an introductory example implementation for wine classification using scikit-learn and the UCI Wine dataset. It showcases combining machine learning practices including experiment tracking, data version tracking, model registration, and containerized deployment and serves as demonstration within the OpenCloudHub project.\\
 
 ______________________________________________________________________
 
