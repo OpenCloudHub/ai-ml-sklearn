@@ -124,7 +124,7 @@ Ensure you have a trained model to load either from local folder or from mlflow 
 **Start the serving application:**
 
 ```bash
-serve run src.serving.serve:app_builder model_uri="models:/ci.wine-classifier/9" --reload
+serve run src.serving.serve:app_builder model_uri="models:/ci.wine-classifier/12" --reload
 ```
 
 or even better and more production ready, run:

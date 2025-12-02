@@ -28,7 +28,7 @@ training = [
     { name = "dvc", extra = ["s3"] },
     { name = "joblib" },
     { name = "pandas" },
-    { name = "ray", extra = ["train"] },
+    { name = "ray", extra = ["default", "train"] },
     { name = "scikit-learn" },
     { name = "seaborn" },
     { name = "shap" },
@@ -50,8 +50,8 @@ requires-dist = [
     { name = "numpy", marker = "extra == 'serving'", specifier = ">=1.24.0" },
     { name = "pandas", marker = "extra == 'training'", specifier = ">=2.3.1" },
     { name = "pydantic-settings", specifier = ">=2.12.0" },
+    { name = "ray", extras = ["default", "train"], marker = "extra == 'training'", specifier = ">=2.48.0" },
     { name = "ray", extras = ["serve"], marker = "extra == 'serving'", specifier = ">=2.48.0" },
-    { name = "ray", extras = ["train"], marker = "extra == 'training'", specifier = ">=2.48.0" },
     { name = "rich", specifier = ">=14.2.0" },
     { name = "scikit-learn", marker = "extra == 'training'", specifier = ">=1.7.1" },
     { name = "seaborn", marker = "extra == 'training'", specifier = ">=0.13.2" },
@@ -2718,6 +2718,22 @@ wheels = [
 ]
 
 [package.optional-dependencies]
+default = [
+    { name = "aiohttp" },
+    { name = "aiohttp-cors" },
+    { name = "colorful" },
+    { name = "grpcio" },
+    { name = "opencensus" },
+    { name = "opentelemetry-exporter-prometheus" },
+    { name = "opentelemetry-proto" },
+    { name = "opentelemetry-sdk" },
+    { name = "prometheus-client" },
+    { name = "py-spy" },
+    { name = "pydantic" },
+    { name = "requests" },
+    { name = "smart-open" },
+    { name = "virtualenv" },
+]
 serve = [
     { name = "aiohttp" },
     { name = "aiohttp-cors" },
