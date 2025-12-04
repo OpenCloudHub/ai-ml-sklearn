@@ -1,3 +1,36 @@
+# ==============================================================================
+# Model Serving Application
+# ==============================================================================
+#
+# Ray Serve deployment with FastAPI for wine quality prediction.
+#
+# Features:
+#   - Loads sklearn models from MLflow Model Registry
+#   - Hot-reload capability via reconfigure() method
+#   - Batch prediction support with confidence scores
+#   - Health checks and model metadata endpoints
+#
+# Endpoints:
+#   - GET  /        : Root info and status
+#   - GET  /health  : Health check with model status
+#   - GET  /info    : Detailed model metadata (URI, run ID, data version)
+#   - POST /predict : Batch wine quality predictions
+#
+# Usage:
+#   # Development with hot-reload:
+#   serve run src.serving.serve:app_builder model_uri="models:/wine-classifier/1" --reload
+#
+#   # Production deployment:
+#   serve build src.serving.serve:app_builder -o serve_config.yaml
+#   serve deploy serve_config.yaml
+#
+# MLflow Integration:
+#   - Models loaded via mlflow.sklearn.load_model(model_uri)
+#   - Supports URIs like 'models:/model-name/version' or 'runs:/run-id/model'
+#   - Extracts training metadata (data version, timestamp) from run info
+#
+# ==============================================================================
+
 from datetime import datetime, timezone
 
 import mlflow

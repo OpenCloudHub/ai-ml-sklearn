@@ -1,3 +1,29 @@
+# ==============================================================================
+# Wine Classifier API Integration Tests
+# ==============================================================================
+#
+# Dummy test suite for the Wine Quality Classifier API.
+#
+# Tests:
+#   - Health check endpoint
+#   - Single and batch predictions with real DVC data
+#   - Error handling for invalid inputs (wrong features, wrong types)
+#
+# Prerequisites:
+#   - Ray Serve running with a deployed model
+#   - Access to DVC data (MinIO credentials)
+#
+# Usage:
+#   # Start the serving application first:
+#   serve run src.serving.serve:app_builder model_uri="models:/wine-classifier/1"
+#
+#   # Run tests:
+#   python tests/test_wine_classifier.py
+#
+# TODO: Migrate to pytest for better test organization
+#
+# ==============================================================================
+
 #!/usr/bin/env python3
 """
 Test script for Wine Quality Classifier FastAPI deployment

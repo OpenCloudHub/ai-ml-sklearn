@@ -1,3 +1,30 @@
+# ==============================================================================
+# API Schema Definitions
+# ==============================================================================
+#
+# Pydantic models for request/response validation in the serving API.
+#
+# Request Models:
+#   - PredictionRequest: Batch input with feature vector validation
+#     - Validates feature count (12 features per sample)
+#     - Checks for NaN/infinite values
+#     - Limits batch size to prevent DOS attacks
+#
+# Response Models:
+#   - PredictionResponse: Quality scores with confidence values
+#   - HealthResponse: API health status and uptime
+#   - ModelInfo: MLflow model metadata (URI, run ID, data version)
+#   - ErrorResponse: Structured error details
+#
+# Feature Vector (12 values):
+#   [fixed_acidity, volatile_acidity, citric_acid, residual_sugar,
+#    chlorides, free_sulfur_dioxide, total_sulfur_dioxide, density,
+#    pH, sulphates, alcohol, wine_type]
+#
+#   wine_type: 0 = red, 1 = white
+#
+# ==============================================================================
+
 """Schema definitions for the serving module."""
 
 from datetime import datetime

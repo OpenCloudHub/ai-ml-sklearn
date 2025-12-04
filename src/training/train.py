@@ -1,3 +1,33 @@
+# ==============================================================================
+# Training Script
+# ==============================================================================
+#
+# Main training entrypoint for the Wine Quality Classifier.
+#
+# This script orchestrates the full training pipeline:
+#   1. Loads data from DVC (versioned in S3/MinIO)
+#   2. Trains a LogisticRegression model with StandardScaler pipeline
+#   3. Uses Ray + joblib for distributed training
+#   4. Logs all metrics, parameters, and artifacts to MLflow
+#   5. Registers the model in MLflow Model Registry
+#
+# Usage:
+#   python src/training/train.py --C 0.9 --max-iter 100
+#
+# Environment Variables Required:
+#   - MLFLOW_TRACKING_URI: MLflow server URL
+#   - ARGO_WORKFLOW_UID: Workflow identifier (use "DEV" locally)
+#   - DOCKER_IMAGE_TAG: Image tag for traceability (use "DEV" locally)
+#   - DVC_DATA_VERSION: Dataset version (e.g., wine-quality-v0.2.0)
+#   - AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_ENDPOINT_URL: MinIO creds
+#
+# MLflow Integration:
+#   - Uses autolog() for automatic metric capture
+#   - Tags runs with workflow metadata for full traceability
+#   - Logs DVC metadata as artifacts for data provenance
+#
+# ==============================================================================
+
 import argparse
 from datetime import datetime
 

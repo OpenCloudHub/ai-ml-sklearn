@@ -1,3 +1,28 @@
+# ==============================================================================
+# Data Loading Module
+# ==============================================================================
+#
+# Handles loading versioned datasets from DVC (Data Version Control).
+#
+# Data Flow:
+#   1. DVC resolves the data path for a specific version tag
+#   2. s3fs fetches the actual data from MinIO (S3-compatible storage)
+#   3. Data is split into train/validation sets
+#   4. Metadata (from DVC) is returned for MLflow logging
+#
+# DVC Integration:
+#   - Uses dvc.api.get_url() to resolve versioned file paths
+#   - Uses dvc.api.read() to fetch metadata.json
+#   - Supports version tags like 'wine-quality-v0.2.0'
+#
+# S3/MinIO Configuration:
+#   Requires environment variables:
+#   - AWS_ACCESS_KEY_ID
+#   - AWS_SECRET_ACCESS_KEY
+#   - AWS_ENDPOINT_URL (e.g., http://minio:9000)
+#
+# ==============================================================================
+
 import json
 import os
 from typing import Tuple

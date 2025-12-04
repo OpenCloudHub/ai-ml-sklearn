@@ -1,3 +1,30 @@
+# ==============================================================================
+# Logging Configuration
+# ==============================================================================
+#
+# Rich-based logging setup for pretty console output.
+#
+# Features:
+#   - Color-coded log levels with custom theme
+#   - Custom SUCCESS level (between INFO and WARNING)
+#   - Section headers with rule() for visual separation
+#   - Ray-compatible (works in both driver and worker processes)
+#
+# Usage:
+#   from src._utils.logging import get_logger, log_section
+#
+#   logger = get_logger(__name__)
+#   logger.info("Standard info message")
+#   logger.success("Success message in green")  # Custom level
+#   log_section("Section Title", "🚀")  # Visual separator
+#
+# Ray Compatibility:
+#   - Configures logging after ray.init() but before workers spawn
+#   - Uses propagate=False to avoid duplicate handlers
+#   - Uses print() for section headers (more reliable with Ray)
+#
+# ==============================================================================
+
 import logging
 import sys
 

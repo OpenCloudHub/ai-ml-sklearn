@@ -1,3 +1,25 @@
+# ==============================================================================
+# Training Configuration
+# ==============================================================================
+#
+# Pydantic-based configuration management for training.
+#
+# Two configuration classes:
+#   - WorkflowTags: CI/CD data contract (ARGO_WORKFLOW_UID, DOCKER_IMAGE_TAG,
+#                   DVC_DATA_VERSION) - required for reproducible training
+#   - TrainingConfig: Application settings (MLflow, DVC paths, random state)
+#
+# Configuration is loaded from environment variables automatically.
+# For local development, create a .env file with required values.
+#
+# MLflow Tagging:
+#   All WorkflowTags are applied to MLflow runs, enabling filtering by:
+#   - Argo workflow run ID
+#   - Docker image version
+#   - Dataset version
+#
+# ==============================================================================
+
 from pydantic_settings import BaseSettings
 
 
