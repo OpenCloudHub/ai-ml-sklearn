@@ -9,6 +9,7 @@
 #   - Custom SUCCESS level (between INFO and WARNING)
 #   - Section headers with rule() for visual separation
 #   - Ray-compatible (works in both driver and worker processes)
+#   - Auto-suppresses warnings in production/training environments
 #
 # Usage:
 #   from src._utils.logging import get_logger, log_section
@@ -23,14 +24,47 @@
 #   - Uses propagate=False to avoid duplicate handlers
 #   - Uses print() for section headers (more reliable with Ray)
 #
+# Environment-based Warning Suppression:
+#   When ENVIRONMENT is "production" or "training", Python warnings
+#   and noisy library loggers (MLflow, urllib3, etc.) are silenced.
+#
 # ==============================================================================
 
 import logging
+import os
 import sys
+import warnings
 
 from rich.console import Console
 from rich.logging import RichHandler
 from rich.theme import Theme
+
+# ==============================================================================
+# Suppress warnings in production/training environments
+# ==============================================================================
+_ENVIRONMENT = os.getenv("ENVIRONMENT", "development").lower()
+
+if _ENVIRONMENT in ("production", "training"):
+    # Suppress Python warnings (DeprecationWarning, FutureWarning, etc.)
+    warnings.filterwarnings("ignore")
+
+    # Silence noisy library loggers
+    for _logger_name in (
+        "mlflow",
+        "mlflow.tracking",
+        "mlflow.utils",
+        "mlflow.sklearn",
+        "mlflow.models",
+        "urllib3",
+        "urllib3.connectionpool",
+        "git",
+        "git.cmd",
+        "fsspec",
+        "s3fs",
+        "botocore",
+        "boto3",
+    ):
+        logging.getLogger(_logger_name).setLevel(logging.ERROR)
 
 # Custom theme
 CUSTOM_THEME = Theme(
