@@ -60,7 +60,6 @@ def train(X_train, y_train, X_val, y_val, C, max_iter, solver):
                     max_iter=max_iter,
                     solver=solver,
                     random_state=TRAINING_CONFIG.random_state,
-                    multi_class="auto",
                 ),
             ),
         ]
@@ -119,7 +118,9 @@ def main():
         run_name=run_name, log_system_metrics=True, tags=workflow_tags
     ):
         log_section("Starting MLflow Run", "🚀")
-        mlflow.sklearn.autolog(log_models=False)
+        mlflow.sklearn.autolog(
+            log_models=False, silent=TRAINING_CONFIG.environment == "production"
+        )
         # Log DVC metadata as parameters for traceability
         mlflow.log_params(
             {
@@ -158,7 +159,6 @@ def main():
             name="model",
             registered_model_name=registered_model_name,
             input_example=X_val[:1],
-            # tags=
         )
         logger.info(f"Model registered as: {registered_model_name}")
 

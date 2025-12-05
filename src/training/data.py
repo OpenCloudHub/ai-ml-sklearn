@@ -52,7 +52,7 @@ def load_data(
         Tuple of (X_train, y_train, X_val, y_val, metadata)
     """
     log_section(f"Loading Data Version {version}", "📦")
-    logger.info(f"DVC repo: [cyan]{TRAINING_CONFIG.dvc_repo}[/cyan]")
+    logger.info(f"DVC repo: {TRAINING_CONFIG.dvc_repo}")
 
     # Get URLs from DVC
     data_path = dvc.api.get_url(
@@ -66,9 +66,7 @@ def load_data(
     )
     metadata = json.loads(metadata_content)
 
-    logger.info(
-        f"Loaded dataset: [bold]{metadata['dataset']['name']}[/bold] [green]({version})[/green]"
-    )
+    logger.info(f"Loaded dataset: {metadata['dataset']['name']} ({version})")
 
     # Configure S3 filesystem with SSL verification disabled
     s3_client = s3fs.S3FileSystem(

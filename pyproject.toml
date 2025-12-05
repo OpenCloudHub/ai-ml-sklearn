@@ -5,6 +5,7 @@ description = "Example model training and serving with ray, mlflow, sklearn and 
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "loguru>=0.7.3",
     # Shared dependencies (both training and serving)
     "mlflow>=3.2.0",
     "pydantic-settings>=2.12.0",

@@ -65,7 +65,7 @@ COPY --chown=ray:ray src/ ./src/
 ENV VIRTUAL_ENV="/workspace/project/.venv" \
     PATH="/workspace/project/.venv/bin:$PATH" \
     PYTHONPATH="/workspace/project" \
-    ENVIRONMENT=training
+    ENVIRONMENT=production
 
 #==============================================================================#
 # Stage: SERVING (production serving image)

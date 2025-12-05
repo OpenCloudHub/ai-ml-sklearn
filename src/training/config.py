@@ -46,6 +46,9 @@ class WorkflowTags(BaseSettings):
 class TrainingConfig(BaseSettings):
     """Configuration for the model training application."""
 
+    environment: str = "development"  # "development" or "production"
+    log_level: str = "INFO"
+
     # For experiment tracking
     mlflow_tracking_uri: str
     mlflow_experiment_name: str = "wine-quality"
