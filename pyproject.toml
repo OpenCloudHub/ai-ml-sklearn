@@ -6,7 +6,6 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "loguru>=0.7.3",
-    # Shared dependencies (both training and serving)
     "mlflow>=3.2.0",
     "pydantic-settings>=2.12.0",
     "rich>=14.2.0",
@@ -17,7 +16,7 @@ dependencies = [
 training = [
     "joblib>=1.5.1",
     "dvc[s3]>=3.64.0",
-    "ray[default,train]>=2.48.0",
+    "ray[default,train]>=2.51.0",
     "pandas>=2.3.1",
     "seaborn>=0.13.2",
     "shap>=0.48.0",
@@ -26,7 +25,7 @@ training = [
 
 # Serving-specific dependencies
 serving = [
-    "ray[serve]>=2.48.0",
+    "ray[serve]>=2.51.0",
     "fastapi>=0.116.1",
     "numpy>=1.24.0",
 ]
