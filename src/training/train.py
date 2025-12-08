@@ -41,7 +41,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 from src._utils.logging import get_logger, log_section
-from src.training.config import TRAINING_CONFIG, WORKFLOW_TAGS
+from src.training.config import TRAINING_CONFIG, get_workflow_tags
 from src.training.data import load_data
 
 logger = get_logger(__name__)
@@ -84,39 +84,40 @@ def main():
     parser.add_argument("--run-name", default=None)
     args = parser.parse_args()
 
+    # Get workflow tags (lazy-loaded, requires env vars to be set)
+    workflow_tags = get_workflow_tags()
+
     log_section("Training Configuration", "⚙️")
     logger.info(f"C: {args.C}")
     logger.info(f"Max iterations: {args.max_iter}")
     logger.info(f"Solver: {args.solver}")
 
     log_section("CI/CD Data Contract from ENV", "📋")
-    logger.info(f"Argo Workflow UID: {WORKFLOW_TAGS.argo_workflow_uid}")
-    logger.info(f"Docker image tag: {WORKFLOW_TAGS.docker_image_tag}")
-    logger.info(f"DVC data version: {WORKFLOW_TAGS.dvc_data_version}")
+    logger.info(f"Argo Workflow UID: {workflow_tags.argo_workflow_uid}")
+    logger.info(f"Docker image tag: {workflow_tags.docker_image_tag}")
+    logger.info(f"DVC data version: {workflow_tags.dvc_data_version}")
 
     # Setup Ray
     ray.init(address="auto", ignore_reinit_error=True)
     register_ray()
 
     # Load data
-    logger.info(f"Loading data version: {WORKFLOW_TAGS.dvc_data_version}")
-    X_train, y_train, X_val, y_val, metadata = load_data(WORKFLOW_TAGS.dvc_data_version)
+    logger.info(f"Loading data version: {workflow_tags.dvc_data_version}")
+    X_train, y_train, X_val, y_val, metadata = load_data(workflow_tags.dvc_data_version)
     logger.info(f"Train size: {len(X_train)}, Validation size: {len(X_val)}")
 
     # Setup MLflow
     mlflow.set_experiment(TRAINING_CONFIG.mlflow_experiment_name)
     run_name = args.run_name or f"train_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
-    # ⚠️ IMPORTANT: Tag training rune with workflow tags
-    workflow_tags = {
-        "argo_workflow_uid": WORKFLOW_TAGS.argo_workflow_uid,
-        "docker_image_tag": WORKFLOW_TAGS.docker_image_tag,
-        "dvc_data_version": WORKFLOW_TAGS.dvc_data_version,
+    # ⚠️ IMPORTANT: Tag training run with workflow tags for traceability
+    mlflow_tags = {
+        "argo_workflow_uid": workflow_tags.argo_workflow_uid,
+        "docker_image_tag": workflow_tags.docker_image_tag,
+        "dvc_data_version": workflow_tags.dvc_data_version,
     }
 
-    with mlflow.start_run(
-        run_name=run_name, log_system_metrics=True, tags=workflow_tags
-    ):
+    with mlflow.start_run(run_name=run_name, log_system_metrics=True, tags=mlflow_tags):
         log_section("Starting MLflow Run", "🚀")
         mlflow.sklearn.autolog(
             log_models=False, silent=TRAINING_CONFIG.environment == "production"
@@ -127,7 +128,7 @@ def main():
                 "dvc_repo": TRAINING_CONFIG.dvc_repo,
                 "dvc_data_path": TRAINING_CONFIG.dvc_data_path,
                 "dvc_metrics_path": TRAINING_CONFIG.dvc_metrics_path,
-                "dvc_data_version": WORKFLOW_TAGS.dvc_data_version,
+                "dvc_data_version": workflow_tags.dvc_data_version,
             }
         )
         # Log data metrics from DVC as a JSON artifact

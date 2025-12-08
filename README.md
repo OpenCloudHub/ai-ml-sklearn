@@ -12,10 +12,10 @@
   </picture>
   </a>
 
-<h1 align="center">Wine Classifier - MLOps Demo</h1>
+<h1 align="center">Wine Classifier — MLOps Baseline Demo</h1>
 
 <p align="center">
-    Scikit-learn wine classification with a modern MLOps pipeline featuring MLflow tracking and Ray for distributed training and serving.<br />
+    End-to-end MLOps pipeline demonstrating core platform patterns with scikit-learn, MLflow experiment tracking, DVC data versioning, and Ray Serve deployment.<br />
     <a href="https://github.com/opencloudhub"><strong>Explore OpenCloudHub »</strong></a>
   </p>
 </div>
@@ -27,16 +27,15 @@ ______________________________________________________________________
   <ol>
     <li><a href="#about">About</a></li>
     <li><a href="#thesis-context">Thesis Context</a></li>
-    <li><a href="#features">Features</a></li>
     <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#code-structure">Code Structure</a></li>
     <li><a href="#getting-started">Getting Started</a></li>
     <li><a href="#infrastructure">Infrastructure Options</a></li>
     <li><a href="#usage">Usage</a></li>
     <li><a href="#configuration">Configuration</a></li>
-    <li><a href="#project-structure">Project Structure</a></li>
+    <li><a href="#workflow-tags">Workflow Tags & Traceability</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
-    <li><a href="#contact">Contact</a></li>
   </ol>
 </details>
 
@@ -44,94 +43,356 @@ ______________________________________________________________________
 
 <h2 id="about">🎯 About</h2>
 
-This repository demonstrates an end-to-end MLOps pipeline for wine quality classification using scikit-learn and the UCI Wine Quality dataset. It showcases modern machine learning practices including:
+This repository implements a **baseline MLOps workload** using scikit-learn and the UCI Wine Quality dataset. It serves as the foundational demonstration that validates core platform patterns before introducing complexity through distributed training, hyperparameter optimization, or generative AI workloads.
 
-- **Experiment Tracking** - Full lineage from data to deployed model via MLflow
-- **Data Version Control** - Reproducible datasets using DVC with S3-compatible storage (MinIO)
-- **Model Registry** - Centralized model versioning and lifecycle management
-- **Containerized Workflows** - Multi-stage Docker builds for training and serving
-- **Production Serving** - Ray Serve with FastAPI for scalable inference
+The pipeline demonstrates:
+
+- **Experiment Tracking** — All training runs captured in MLflow with parameters, metrics, and artifacts
+- **Data Versioning** — Reproducible datasets via DVC with S3-compatible storage (MinIO)
+- **Model Registry** — Centralized model versioning with lifecycle stage management
+- **Production Serving** — Ray Serve with FastAPI providing scalable inference endpoints
+- **Full Traceability** — Every model traceable to its exact data version, code commit, and workflow execution
 
 ______________________________________________________________________
 
 <h2 id="thesis-context">📚 Thesis Context</h2>
 
-This repository serves as a practical demonstration for my thesis on MLOps practices. It illustrates key concepts:
+This repository is part of a Master's thesis: **"A Scalable MLOps System for Multimodal Educational Analysis"** at Goethe University Frankfurt / DIPF Leibniz Institute.
 
-| Concept | Implementation | Tool |
-|---------|---------------|------|
-| **Experiment Tracking** | All training runs logged with parameters, metrics, and artifacts | MLflow |
-| **Data Versioning** | Dataset versions tracked and linked to model training | DVC + MinIO |
-| **Model Registry** | Models versioned with automatic lineage tracking | MLflow Model Registry |
-| **Reproducibility** | Environment variables (workflow tags) ensure traceability | Pydantic Settings |
-| **CI/CD Integration** | Automated builds and training pipelines | GitHub Actions + Argo |
-| **Serving Infrastructure** | Scalable model serving with hot-reload capability | Ray Serve + FastAPI |
+### Role in the Platform
 
-**MLflow Integration Highlights:**
-- `mlflow.sklearn.autolog()` captures training metrics automatically
-- Models registered with `registered_model_name` for versioning
-- Training runs tagged with `argo_workflow_uid`, `docker_image_tag`, `dvc_data_version`
-- Serving layer loads models via `mlflow.sklearn.load_model(model_uri)`
-- Data metadata logged as artifacts for full provenance
+This workload serves as the **baseline demonstration** that establishes core integration patterns. By using scikit-learn (the simplest ML framework), it isolates and validates the MLOps infrastructure without the complexity of distributed training or GPU scheduling. All subsequent workloads (PyTorch Lightning, Transformers, Qwen VL) follow the same patterns established here.
 
-______________________________________________________________________
+### Requirements Addressed
 
-<h2 id="features">✨ Features</h2>
+| Req ID   | Requirement               | Implementation                                                                           |
+| -------- | ------------------------- | ---------------------------------------------------------------------------------------- |
+| **FR1**  | Experiment Tracking       | MLflow `autolog()` captures all sklearn metrics; custom tags link runs to workflows      |
+| **FR2**  | Data Versioning           | DVC resolves dataset versions from `data-registry`; metadata logged as MLflow artifact   |
+| **FR3**  | Model Registry            | Models registered via `mlflow.sklearn.log_model()` with `registered_model_name`          |
+| **FR5**  | Model Serving             | Ray Serve deployment with FastAPI; loads models via `mlflow.sklearn.load_model()`        |
+| **FR6**  | Framework Agnosticism     | Validates platform supports traditional ML (sklearn) alongside deep learning             |
+| **FR14** | GitOps Deployment         | RayService manifests in `gitops` repo synced by ArgoCD                                   |
+| **FR15** | CI/CD Integration         | GitHub Actions triggers Argo Workflows for automated training                            |
+| **NFR1** | End-to-End Lineage        | Workflow tags (`argo_workflow_uid`, `docker_image_tag`, `dvc_data_version`) on every run |
+| **NFR2** | Reproducibility           | DVC version + environment configuration ensures reproducible training                    |
+| **NFR8** | Declarative Configuration | Pydantic Settings for typed, validated configuration                                     |
+| **C1**   | Open-Source Only          | sklearn, MLflow, Ray, DVC — all Apache 2.0 or similar licenses                           |
+| **C2**   | Self-Hostable             | Runs entirely on self-hosted Kubernetes with MinIO storage                               |
 
-- 🔬 **Experiment Tracking** - MLflow integration with autologging and model registry
-- 📦 **Data Versioning** - DVC-managed datasets with S3/MinIO backend
-- 🐳 **Multi-Stage Docker** - Optimized builds for dev, training, and serving
-- ⚡ **Distributed Training** - Ray + joblib backend for parallel model fitting
-- 🚀 **Production Serving** - Ray Serve with FastAPI, health checks, and batch inference
-- 🔄 **CI/CD Pipelines** - GitHub Actions for code quality, image builds, and training
-- 🏷️ **Workflow Tagging** - Full traceability via environment-based data contracts
-- 🧪 **DevContainer Support** - VS Code development environment included
+### Integration Patterns Demonstrated
+
+This workload establishes patterns that all other ML workloads follow:
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│  data-registry  │────▶│  ai-ml-sklearn  │────▶│     gitops      │
+│  (DVC datasets) │     │  (this repo)    │     │  (deployment)   │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+        │                       │                       │
+        ▼                       ▼                       ▼
+   Versioned data         Model artifact          RayService
+   in MinIO               in MLflow Registry      manifest synced
+```
+
+### Related Components
+
+| Component                | Repository                                                     | Relationship                         |
+| ------------------------ | -------------------------------------------------------------- | ------------------------------------ |
+| **Data Source**          | [data-registry](https://github.com/opencloudhub/data-registry) | DVC-versioned wine-quality dataset   |
+| **Workflow Templates**   | [gitops](https://github.com/opencloudhub/gitops)               | Argo Workflow templates for training |
+| **Deployment Manifests** | [gitops](https://github.com/opencloudhub/gitops)               | RayService YAML for model serving    |
+| **CI/CD Actions**        | [.github](https://github.com/opencloudhub/.github)             | Reusable workflows for Docker builds |
 
 ______________________________________________________________________
 
 <h2 id="architecture">🏗️ Architecture</h2>
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                              CI/CD Pipeline                                 │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────────────────────┐   │
-│  │ GitHub       │──▶│ Docker Build │──▶│ Argo Workflows               │   │
-│  │ Actions      │    │ (training/   │    │ (Orchestrates training jobs) │   │
-│  └──────────────┘    │  serving)    │    └──────────────────────────────┘   │
-│                      └──────────────┘                                       │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                            Training Pipeline                                │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐                   │
-│  │ DVC          │──▶│ Ray + Joblib │──▶│ MLflow       │                   │
-│  │ (Load data   │    │ (Distributed │    │ (Log metrics,│                   │
-│  │  from MinIO) │    │  training)   │    │  register    │                   │
-│  └──────────────┘    └──────────────┘    │  model)      │                   │
-│                                          └──────────────┘                   │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                            Serving Pipeline                                 │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐                   │
-│  │ MLflow       │──▶│ Ray Serve    │──▶│ FastAPI      │                   │
-│  │ (Load model  │    │ (Deployment  │    │ (REST API,   │                   │
-│  │  by URI)     │    │  management) │    │  /predict)   │                   │
-│  └──────────────┘    └──────────────┘    └──────────────┘                   │
-└─────────────────────────────────────────────────────────────────────────────┘
+### End-to-End Pipeline
+
+```mermaid
+flowchart TB
+    subgraph trigger["Trigger Layer"]
+        GHA[GitHub Actions]
+    end
+
+    subgraph orchestration["Orchestration Layer"]
+        ARGO[Argo Workflows]
+    end
+
+    subgraph training["Training Pipeline"]
+        DVC[DVC Data Loading]
+        RAY_TRAIN[Ray + Joblib]
+        MLFLOW_LOG[MLflow Logging]
+        DVC --> RAY_TRAIN --> MLFLOW_LOG
+    end
+
+    subgraph registry["Model Registry"]
+        MLFLOW_REG[(MLflow Model Registry)]
+    end
+
+    subgraph serving["Serving Layer"]
+        MLFLOW_LOAD[MLflow Model Load]
+        RAY_SERVE[Ray Serve]
+        FASTAPI[FastAPI Endpoints]
+        MLFLOW_LOAD --> RAY_SERVE --> FASTAPI
+    end
+
+    subgraph storage["Storage Layer"]
+        MINIO[(MinIO / S3)]
+    end
+
+    GHA -->|"workflow_dispatch"| ARGO
+    ARGO -->|"submits RayJob"| training
+    DVC <-->|"fetch versioned data"| MINIO
+    MLFLOW_LOG -->|"register model"| MLFLOW_REG
+    MLFLOW_REG -->|"model URI"| MLFLOW_LOAD
+    MLFLOW_LOG -->|"store artifacts"| MINIO
 ```
 
-**Key Components:**
+### Training Flow Detail
 
-| Component | Purpose | Files |
-|-----------|---------|-------|
-| **Training** | Model training with scikit-learn pipeline | `src/training/train.py`, `data.py`, `config.py` |
-| **Serving** | REST API for inference | `src/serving/serve.py`, `schemas.py`, `config.py` |
-| **Data Loading** | DVC-based data fetching from S3/MinIO | `src/training/data.py` |
-| **Configuration** | Pydantic-based settings management | `src/*/config.py` |
-| **Logging** | Rich-formatted logging with Ray compatibility | `src/_utils/logging.py` |
+```mermaid
+sequenceDiagram
+    participant GH as GitHub Actions
+    participant Argo as Argo Workflows
+    participant DVC as DVC API
+    participant MinIO as MinIO Storage
+    participant Ray as Ray Cluster
+    participant MLflow as MLflow Server
+
+    GH->>Argo: Trigger workflow (data_version, image_tag)
+    Argo->>Argo: Set environment variables
+    Argo->>Ray: Submit RayJob
+
+    Ray->>DVC: get_url(data_path, rev=version)
+    DVC-->>Ray: S3 URL for dataset
+    Ray->>MinIO: Fetch Parquet data
+    MinIO-->>Ray: Dataset + metadata
+
+    Ray->>Ray: Train LogisticRegression (joblib backend)
+    Ray->>MLflow: autolog() metrics & params
+    Ray->>MLflow: log_model() with registry name
+    Ray->>MLflow: set_tags(workflow_uid, image_tag, data_version)
+    Ray->>MLflow: log_artifact(metadata.json)
+
+    MLflow-->>Argo: Run ID, Model Version
+    Argo-->>GH: Workflow completed
+```
+
+### Serving Architecture
+
+```mermaid
+flowchart LR
+    subgraph client["Client"]
+        REQ[HTTP Request]
+    end
+
+    subgraph rayserve["Ray Serve Deployment"]
+        INGRESS[Ingress Controller]
+        DEPLOY[WineClassifierDeployment]
+
+        subgraph deployment_internals["Deployment Internals"]
+            MODEL[sklearn Pipeline]
+            SCALER[StandardScaler]
+            LR[LogisticRegression]
+        end
+    end
+
+    subgraph mlflow_reg["MLflow Registry"]
+        MODEL_URI["models:/ci.wine-classifier/1"]
+    end
+
+    REQ -->|"POST /predict"| INGRESS
+    INGRESS --> DEPLOY
+    DEPLOY -->|"load on startup"| mlflow_reg
+    MODEL --> SCALER --> LR
+    DEPLOY -->|"predictions"| REQ
+```
+
+______________________________________________________________________
+
+<h2 id="code-structure">📂 Code Structure</h2>
+
+Each file includes detailed header comments explaining its purpose, dependencies, and usage. This section provides an overview of the codebase organization.
+
+### Project Layout
+
+```
+ai-ml-sklearn/
+├── src/
+│   ├── training/                   # Training pipeline
+│   │   ├── train.py                # Entrypoint: orchestrates training flow
+│   │   ├── data.py                 # DVC data loading from S3/MinIO
+│   │   └── config.py               # Pydantic configuration models
+│   ├── serving/                    # Model serving
+│   │   ├── serve.py                # Ray Serve deployment with FastAPI
+│   │   ├── schemas.py              # Request/response Pydantic models
+│   │   └── config.py               # Serving configuration
+│   └── _utils/
+│       └── logging.py              # Rich logging with Ray compatibility
+├── tests/
+│   └── test_wine_classifier.py     # API integration tests
+├── .github/workflows/
+│   ├── ci-code-quality.yaml        # Pre-commit, ruff, type checking
+│   ├── ci-docker-build-push.yaml   # Multi-stage Docker builds
+│   └── train.yaml                  # MLOps pipeline trigger
+├── Dockerfile                      # Multi-stage: dev → training → serving
+├── .env.docker                     # Local compose environment
+├── .env.minikube                   # Minikube environment
+└── pyproject.toml                  # UV package configuration
+```
+
+### Training Module (`src/training/`)
+
+#### `train.py` — Training Entrypoint
+
+The main training script orchestrates the complete training pipeline:
+
+```python
+# Key responsibilities:
+# 1. Parse CLI arguments (--C, --max-iter, --solver)
+# 2. Load versioned data via DVC
+# 3. Initialize Ray with joblib backend for distributed fitting
+# 4. Train sklearn Pipeline (StandardScaler → LogisticRegression)
+# 5. Log everything to MLflow (autolog + custom tags + artifacts)
+# 6. Register model in MLflow Model Registry
+```
+
+**MLflow Integration:**
+
+- `mlflow.sklearn.autolog()` — Automatically captures parameters, metrics, and model signature
+- `mlflow.set_tags()` — Adds workflow traceability tags (argo_workflow_uid, docker_image_tag, dvc_data_version)
+- `mlflow.log_artifact()` — Stores DVC metadata.json for data provenance
+- `mlflow.sklearn.log_model(..., registered_model_name=...)` — Registers model in registry
+
+**Ray Integration:**
+
+- `ray.init()` — Connects to Ray cluster (local or remote)
+- `register_ray()` — Enables joblib to use Ray as backend
+- `with joblib.parallel_backend("ray"):` — Distributes sklearn's internal parallelism
+
+#### `data.py` — DVC Data Loading
+
+Handles fetching versioned datasets from the data registry:
+
+```python
+# Data flow:
+# 1. dvc.api.get_url() → Resolves version tag to S3 path
+# 2. dvc.api.read() → Fetches metadata.json (feature stats, dataset info)
+# 3. s3fs.S3FileSystem → Opens Parquet file from MinIO
+# 4. train_test_split() → Creates train/validation sets
+# 5. Returns (X_train, y_train, X_val, y_val, metadata)
+```
+
+**Why DVC API instead of `dvc pull`:**
+
+- No local DVC cache needed in containers
+- Direct S3 access is faster for single files
+- Version resolution happens at runtime, not build time
+
+#### `config.py` — Configuration Management
+
+Pydantic Settings models for typed, validated configuration:
+
+```python
+# Two configuration classes:
+#
+# TRAINING_CONFIG (TrainingConfig):
+#   - mlflow_experiment_name: str
+#   - mlflow_registered_model_name: str
+#   - dvc_repo: str (data-registry URL)
+#   - dvc_data_path: str (path within repo)
+#   - random_state: int
+#
+# WORKFLOW_TAGS (WorkflowTags):
+#   - argo_workflow_uid: str (from ARGO_WORKFLOW_UID env)
+#   - docker_image_tag: str (from DOCKER_IMAGE_TAG env)
+#   - dvc_data_version: str (from DVC_DATA_VERSION env)
+```
+
+### Serving Module (`src/serving/`)
+
+#### `serve.py` — Ray Serve Deployment
+
+Production-ready model serving with FastAPI integration:
+
+```python
+# Key components:
+#
+# app_builder(args: Dict) → Application
+#   - Factory function for Ray Serve
+#   - Receives model_uri from deployment config
+#   - Returns bound FastAPI application
+#
+# WineClassifierDeployment:
+#   - __init__(): Loads model via mlflow.sklearn.load_model()
+#   - predict(): Batch inference on wine features
+#   - Extracts run metadata for /info endpoint
+#
+# FastAPI routes:
+#   - GET /        → Service info
+#   - GET /health  → Liveness probe
+#   - GET /info    → Model metadata (URI, run_id, data_version)
+#   - POST /predict → Batch predictions
+```
+
+**Hot Reload Pattern:**
+
+```python
+# Ray Serve's reconfigure() enables zero-downtime model updates:
+def reconfigure(self, config: Dict):
+    new_uri = config.get("model_uri")
+    if new_uri and new_uri != self.model_uri:
+        self.model = mlflow.sklearn.load_model(new_uri)
+        self.model_uri = new_uri
+```
+
+#### `schemas.py` — API Contracts
+
+Pydantic models defining the REST API interface:
+
+```python
+# WineFeatures: Single wine sample (12 features)
+#   - fixed_acidity, volatile_acidity, citric_acid, ...
+#
+# PredictionRequest: Batch of samples
+#   - samples: List[WineFeatures] (max 1000)
+#
+# PredictionResponse: Batch of predictions
+#   - predictions: List[int] (quality scores)
+#   - model_uri: str
+#   - processing_time_ms: float
+```
+
+### CI/CD Workflows (`.github/workflows/`)
+
+#### `train.yaml` — MLOps Pipeline Trigger
+
+```yaml
+# Workflow dispatch inputs:
+#   - dvc_data_version: Dataset version tag (e.g., wine-quality-v1.0.0)
+#   - comparison_metric: Metric for model comparison (default: accuracy)
+#   - comparison_threshold: Minimum improvement to promote
+#
+# Flow:
+#   1. Calls reusable workflow from .github repo
+#   2. Resolves Docker image tag (SHA-tagged matching 'latest')
+#   3. Submits Argo Workflow with parameters
+#   4. Argo runs training job on Kubernetes
+```
+
+#### `ci-docker-build-push.yaml` — Container Builds
+
+```yaml
+# Multi-stage build targets:
+#   - training: Includes training dependencies + Ray
+#   - serving: Minimal image with serving deps only
+#
+# Tagging strategy:
+#   - SHA tag: ghcr.io/opencloudhub/ai-ml-sklearn-training:<sha>
+#   - latest: Points to most recent main branch build
+```
 
 ______________________________________________________________________
 
@@ -151,99 +412,69 @@ ______________________________________________________________________
    cd ai-ml-sklearn
    ```
 
-2. **Open in DevContainer** (Recommended)
+1. **Open in DevContainer** (Recommended)
 
    VSCode: `Ctrl+Shift+P` → `Dev Containers: Rebuild and Reopen in Container`
 
-   Or **setup locally without DevContainer**:
+   Or **setup locally**:
 
    ```bash
-   # Install UV
    curl -LsSf https://astral.sh/uv/install.sh | sh
-
-   # Install dependencies
    uv sync --dev
    ```
 
-3. **Choose your infrastructure backend** (see next section)
+1. **Choose infrastructure backend** (see next section)
 
 ______________________________________________________________________
 
 <h2 id="infrastructure">🛠️ Infrastructure Options</h2>
 
-Choose the infrastructure that fits your needs:
+This project supports three deployment modes depending on your development stage:
 
-| Option | Use Case | Complexity | Production-like |
-|--------|----------|------------|-----------------|
-| **Local Compose** | Quick prototyping, simple tests | ⭐ Easy | ❌ |
-| **Minikube** | Integration testing, GitOps validation | ⭐⭐ Medium | ✅ |
-| **Production Cluster** | Real deployments, CI/CD pipelines | ⭐⭐⭐ Advanced | ✅✅ |
+### Option 1: Local Compose Stack
 
-### Option 1: Local Compose Stack (Quick & Dirty)
-
-Lightweight Docker Compose stack for rapid iteration — no Kubernetes required.
+For quick iterations without Kubernetes overhead. Provides MLflow and MinIO via Docker Compose.
 
 ```bash
-# Clone and start the local stack
+# Start MLflow + MinIO
 git clone https://github.com/OpenCloudHub/local-compose-stack.git
-cd local-compose-stack
-docker compose up -d
-```
+cd local-compose-stack && docker compose up -d
 
-**Services available:**
-| Service | URL | Credentials |
-|---------|-----|-------------|
-| MLflow UI | http://localhost:5000 | — |
-| MinIO Console | http://localhost:9001 | `admin` / `admin123` |
-| MinIO API | http://localhost:9000 | `admin` / `admin123` |
-
-**Configure this project:**
-```bash
-# Load environment for local compose
+# Configure and run
+cd ../ai-ml-sklearn
 set -a && source .env.docker && set +a
-
-# Start Ray head node
 ray start --head
 ```
 
-> 📖 See [OpenCloudHub/local-compose-stack](https://github.com/OpenCloudHub/local-compose-stack) for full documentation.
+**Available Services:**
 
-### Option 2: Minikube (Production-like Local)
+| Service       | URL                   |
+| ------------- | --------------------- |
+| MLflow UI     | http://localhost:5000 |
+| MinIO Console | http://localhost:9001 |
+| MinIO API     | http://localhost:9000 |
 
-Full Kubernetes stack with Helm charts — mirrors production infrastructure.
+### Option 2: Local Development with Minikube Backend
+
+Run training scripts locally while using platform services (MLflow, MinIO) deployed on Minikube. Useful for testing integration with the full platform stack without submitting jobs to the cluster.
 
 ```bash
-# Start minikube with sufficient resources
-minikube start --cpus=4 --memory=8g
-
-# Deploy the MLOps stack (MLflow, MinIO, Argo, etc.)
-# See OpenCloudHub infrastructure repo for Helm charts
-```
-
-**Configure this project:**
-```bash
-# Load environment for minikube
 set -a && source .env.minikube && set +a
-
-# Start Ray head node
 ray start --head
+
+# Run training locally against Minikube services
+python src/training/train.py --C 0.9
 ```
 
-> ⚠️ **Note:** When running MinIO on minikube with DevContainer attached to host network, you may need to rebuild the container after cluster restarts.
+Requires the OpenCloudHub platform deployed via the [gitops](https://github.com/opencloudhub/gitops) repository.
 
-### Option 3: Production Cluster
+### Option 3: Full Cluster Execution
 
-For CI/CD pipelines and production deployments:
+Training and serving run entirely on Kubernetes, triggered via CI/CD. This is the production pattern where GitHub Actions submits Argo Workflows to the cluster.
 
-1. Trigger training via GitHub Actions workflow dispatch
-2. Argo Workflows orchestrates the training job
-3. Models are registered in MLflow Model Registry
-4. Serving images are built and deployed automatically
+**Trigger training:** [Actions → MLOps Pipeline](https://github.com/OpenCloudHub/ai-ml-sklearn/actions/workflows/train.yaml)
 
-**Trigger production training:**
-```
-https://github.com/OpenCloudHub/ai-ml-sklearn/actions/workflows/train.yaml
-```
+**Flow:** GitHub Actions → Argo Workflows → RayJob (training) → MLflow Registry → RayService (serving)
 
 ______________________________________________________________________
 
@@ -251,197 +482,110 @@ ______________________________________________________________________
 
 ### Training
 
-**Basic training (after loading environment):**
-
 ```bash
-python src/training/train.py --C 0.9
+# Basic training
+python src/training/train.py --C 0.9 --max-iter 200
+
+# Via Ray Job API (production-like)
+RAY_ADDRESS='http://127.0.0.1:8265' ray job submit --working-dir . -- \
+    python src/training/train.py --C 0.9
 ```
 
-**Using Ray Job API (production-like):**
+**CLI Arguments:**
+
+| Argument         | Default  | Description                                            |
+| ---------------- | -------- | ------------------------------------------------------ |
+| `--C`            | `1.0`    | Regularization strength (inverse)                      |
+| `--max-iter`     | `100`    | Maximum solver iterations                              |
+| `--solver`       | `lbfgs`  | Optimization algorithm                                 |
+| `--data-version` | from env | DVC dataset version (overridden by `DVC_DATA_VERSION`) |
+
+### Serving
 
 ```bash
-RAY_ADDRESS='http://127.0.0.1:8265' ray job submit --working-dir . -- python src/training/train.py
-```
-
-### Model Serving
-
-**Start serving with hot-reload (development):**
-
-```bash
+# Development with hot-reload
 serve run src.serving.serve:app_builder model_uri="models:/ci.wine-classifier/1" --reload
+
+# Access API docs
+open http://localhost:8000/docs
 ```
 
-**Production deployment:**
+**Endpoints:**
 
-```bash
-serve build src.serving.serve:app_builder -o src/serving/serve_config.yaml
-serve deploy src/serving/serve_config.yaml
-```
-
-**API Endpoints:**
-| Endpoint | Description |
-|----------|-------------|
-| `GET /` | Service info and status |
-| `GET /health` | Health check |
-| `GET /info` | Model metadata (URI, run ID, data version) |
-| `POST /predict` | Batch wine quality predictions |
-
-Access Swagger docs at `http://localhost:8000/docs`
+| Endpoint   | Method | Description                                |
+| ---------- | ------ | ------------------------------------------ |
+| `/`        | GET    | Service info                               |
+| `/health`  | GET    | Liveness probe                             |
+| `/info`    | GET    | Model metadata (URI, run_id, data_version) |
+| `/predict` | POST   | Batch predictions                          |
 
 ______________________________________________________________________
 
 <h2 id="configuration">⚙️ Configuration</h2>
 
-### Environment Variables
+### Required Environment Variables
 
-The project uses Pydantic Settings for configuration. Required environment variables:
+| Variable                | Description                | Local Value             |
+| ----------------------- | -------------------------- | ----------------------- |
+| `MLFLOW_TRACKING_URI`   | MLflow server URL          | `http://localhost:5000` |
+| `ARGO_WORKFLOW_UID`     | Workflow identifier        | `DEV`                   |
+| `DOCKER_IMAGE_TAG`      | Image tag for traceability | `DEV`                   |
+| `DVC_DATA_VERSION`      | Dataset version            | `wine-quality-v1.0.0`   |
+| `AWS_ACCESS_KEY_ID`     | MinIO access key           | from `.env.*`           |
+| `AWS_SECRET_ACCESS_KEY` | MinIO secret               | from `.env.*`           |
+| `AWS_ENDPOINT_URL`      | MinIO endpoint             | `http://localhost:9000` |
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `MLFLOW_TRACKING_URI` | MLflow server URL | `http://localhost:8081` |
-| `ARGO_WORKFLOW_UID` | Workflow run identifier | `DEV` (local) |
-| `DOCKER_IMAGE_TAG` | Docker image tag for traceability | `DEV` (local) |
-| `DVC_DATA_VERSION` | Dataset version from DVC | `wine-quality-v0.2.0` |
-| `AWS_ACCESS_KEY_ID` | MinIO/S3 access key | - |
-| `AWS_SECRET_ACCESS_KEY` | MinIO/S3 secret key | - |
-| `AWS_ENDPOINT_URL` | MinIO/S3 endpoint | `http://minio:9000` |
+### Configuration Files
 
-### Training Configuration
-
-See `src/training/config.py` for all training settings:
-- `mlflow_experiment_name` - MLflow experiment name (default: `wine-quality`)
-- `mlflow_registered_model_name` - Model registry name (default: `dev.wine-classifier`)
-- `dvc_repo` - DVC registry repository URL
-- `random_state` - Random seed for reproducibility (default: `42`)
-
-### Serving Configuration
-
-See `src/serving/config.py` for serving settings:
-- `expected_num_features` - Number of input features (default: `12`)
-- `request_max_length` - Max batch size for predictions (default: `1000`)
+- **`.env.docker`** — Local compose stack settings
+- **`.env.minikube`** — Minikube/Kubernetes settings
+- **`src/training/config.py`** — Training defaults (experiment name, model name, DVC paths)
+- **`src/serving/config.py`** — Serving limits (max batch size, feature count)
 
 ______________________________________________________________________
 
-<h2 id="workflow-tags">🏷️ Workflow Tags & Data Contract</h2>
+<h2 id="workflow-tags">🏷️ Workflow Tags & Traceability</h2>
 
-This project relies on a small CI/CD "data contract" provided via environment variables ("workflow tags") that must be present for automated and reproducible training runs and correct MLflow tagging. Follow these rules:
+Every training run is tagged with three identifiers that enable complete traceability:
 
-- Required workflow tags (set by Argo workflows in production):
+| Tag                 | Source                  | Purpose                           |
+| ------------------- | ----------------------- | --------------------------------- |
+| `argo_workflow_uid` | `ARGO_WORKFLOW_UID` env | Links to Argo Workflows execution |
+| `docker_image_tag`  | `DOCKER_IMAGE_TAG` env  | Identifies exact code version     |
+| `dvc_data_version`  | `DVC_DATA_VERSION` env  | Identifies exact dataset version  |
 
-  - ARGO_WORKFLOW_UID — unique identifier for the workflow run (use "DEV" for local dev)
-  - DOCKER_IMAGE_TAG — image tag used for the training run (use "DEV" for local dev)
-  - DVC_DATA_VERSION — DVC data version (e.g. wine-quality-v0.2.0). NOTE: this should take precedence over any CLI --data-version argument.
-
-- Why these matter:
-
-  - All training runs are automatically tagged in MLflow with the workflow tags (ARGO_WORKFLOW_UID, DOCKER_IMAGE_TAG, DVC_DATA_VERSION) so you can trace models back to the exact pipeline and dataset.
-  - The training code reads DVC_DATA_VERSION from the environment and will prefer it over CLI args to ensure reproducible CI/CD runs.
-  - If DVC_DATA_VERSION is not supplied in CI, the training run may not match the intended dataset version.
-
-- Data provenance:
-
-  - Training data and metadata are versioned in a DVC registry. The code loads data via DVC and reads artifacts from the MinIO S3-compatible bucket.
-  - The training job logs the DVC metadata (metadata.json) into MLflow as an artifact so datasets are traceable.
-
-- MinIO (S3) credentials required:
-
-  - The runtime needs access to the MinIO bucket where DVC stores artifacts. Provide the following environment variables (examples in .env.sample):
-    - AWS_ACCESS_KEY_ID
-    - AWS_SECRET_ACCESS_KEY
-    - AWS_ENDPOINT_URL
-  - In Kubernetes/Argo, these are provided from secrets (see training workflow template). Locally, create a `.env` or export these variables.
-
-- Local development notes:
-
-  - For local development you can set workflow tags to "DEV" (except DVC_DATA_VERSION which you should set to the dataset tag you want to use, or leave blank and pass --data-version locally).
-  - Example .env usage:
-    ```
-    cp .env.sample .env
-    # edit .env to set DVC_DATA_VERSION and MinIO creds for local testing
-    ```
-  - When running training locally you can still pass --data-version; CI will override it when DVC_DATA_VERSION is set in the env.
-
-- MLflow tagging policy:
-
-  - Always include workflow tags on MLflow runs. The training entrypoint in src/training/train.py already applies these tags automatically:
-    - argo_workflow_uid, docker_image_tag, dvc_data_version
-  - This lets you filter experiments by workflow run, image tag and dataset version in the MLflow UI.
-
-- Quick checklist before submitting a training run in CI:
-
-  1. Ensure Docker image with code is published and DOCKER_IMAGE_TAG is set.
-  1. Ensure ARGO_WORKFLOW_UID is set by the workflow.
-  1. Ensure DVC_DATA_VERSION points to the correct dataset version.
-  1. Ensure MinIO credentials (accesskey/secretkey and endpoint) are available to the job.
-  1. If developing locally and running Minio on local kind cluster and attaching your devcontainer to the host network, you might need to rebuild this container after cluster restarts
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-______________________________________________________________________
-
-<h2 id="project-structure">📁 Project Structure</h2>
+**Traceability Chain:**
 
 ```
-ai-ml-sklearn/
-├── src/
-│   ├── training/                       # Training pipeline
-│   │   ├── train.py                    # Main training script with MLflow logging
-│   │   ├── data.py                     # DVC data loading from S3/MinIO
-│   │   └── config.py                   # Training configuration (Pydantic)
-│   ├── serving/                        # Model serving (Ray Serve + FastAPI)
-│   │   ├── serve.py                    # Ray Serve deployment with FastAPI
-│   │   ├── schemas.py                  # Pydantic request/response models
-│   │   └── config.py                   # Serving configuration
-│   └── _utils/                         # Shared utilities
-│       └── logging.py                  # Rich logging configuration
-├── tests/
-│   └── test_wine_classifier.py         # API integration tests
-├── notebooks/
-│   └── exploring wine_dataset.ipynb    # Data exploration notebook
-├── .github/workflows/                   # CI/CD workflows
-│   ├── ci-code-quality.yaml            # Linting and code quality checks
-│   ├── ci-docker-build-push.yaml       # Docker image builds (training/serving)
-│   └── train.yaml                      # MLOps training pipeline dispatch
-├── .env.docker                          # Environment for local-compose-stack
-├── .env.minikube                        # Environment for minikube setup
-├── Dockerfile                           # Multi-stage build (dev/training/serving)
-├── pyproject.toml                       # Project dependencies and config
-└── uv.lock                              # Dependency lock file
+MLflow Run
+    ├── argo_workflow_uid ──────► Argo Workflows UI (logs, DAG)
+    ├── docker_image_tag ───────► Container Registry (Dockerfile, code)
+    ├── dvc_data_version ───────► data-registry Git tag (dataset)
+    └── artifacts/metadata.json ► Dataset statistics, provenance
 ```
+
+**Local Development:** Set workflow tags to `"DEV"` except `DVC_DATA_VERSION` which should point to a real dataset version.
 
 ______________________________________________________________________
 
 <h2 id="contributing">👥 Contributing</h2>
 
-Contributions are welcome! This project follows OpenCloudHub's contribution standards.
-
-Please see our [Contributing Guidelines](https://github.com/opencloudhub/.github/blob/main/.github/CONTRIBUTING.md) and [Code of Conduct](https://github.com/opencloudhub/.github/blob/main/.github/CODE_OF_CONDUCT.md) for more details.
+Contributions welcome! See [Contributing Guidelines](https://github.com/opencloudhub/.github/blob/main/.github/CONTRIBUTING.md) and [Code of Conduct](https://github.com/opencloudhub/.github/blob/main/.github/CODE_OF_CONDUCT.md).
 
 ______________________________________________________________________
 
 <h2 id="license">📄 License</h2>
 
-Distributed under the Apache 2.0 License. See [LICENSE](LICENSE) for more information.
-
-______________________________________________________________________
-
-<h2 id="contact">📬 Contact</h2>
-
-Organization Link: [https://github.com/OpenCloudHub](https://github.com/OpenCloudHub)
-
-Project Link: [https://github.com/opencloudhub/ai-ml-sklearn](https://github.com/opencloudhub/ai-ml-sklearn)
+Apache 2.0 License. See [LICENSE](LICENSE).
 
 ______________________________________________________________________
 
 <h2 id="acknowledgements">🙏 Acknowledgements</h2>
 
-- [UCI Wine Quality Dataset](https://archive.ics.uci.edu/ml/datasets/wine+quality) - The dataset used for classification
-- [MLflow](https://mlflow.org/) - ML lifecycle management and model registry
-- [Ray](https://ray.io/) - Distributed computing and model serving
-- [DVC](https://dvc.org/) - Data version control
-- [FastAPI](https://fastapi.tiangolo.com/) - Modern Python web framework
-- [Pydantic](https://docs.pydantic.dev/) - Data validation and settings management
-- [UV](https://github.com/astral-sh/uv) - Fast Python package manager
-- [Rich](https://rich.readthedocs.io/) - Beautiful terminal output
+- [UCI Wine Quality Dataset](https://archive.ics.uci.edu/ml/datasets/wine+quality)
+- [MLflow](https://mlflow.org/) — Experiment tracking and model registry
+- [Ray](https://ray.io/) — Distributed computing and serving
+- [DVC](https://dvc.org/) — Data version control
+- [FastAPI](https://fastapi.tiangolo.com/) — REST API framework
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>

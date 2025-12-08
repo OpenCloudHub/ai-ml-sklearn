@@ -12,6 +12,11 @@
 # Configuration is loaded from environment variables automatically.
 # For local development, create a .env file with required values.
 #
+# IMPORTANT - Lazy Loading:
+#   WorkflowTags are lazy-loaded via get_workflow_tags() to prevent import
+#   failures in serving code that imports training modules but doesn't need
+#   the workflow environment variables.
+#
 # MLflow Tagging:
 #   All WorkflowTags are applied to MLflow runs, enabling filtering by:
 #   - Argo workflow run ID
@@ -62,6 +67,10 @@ class TrainingConfig(BaseSettings):
     random_state: int = 42
 
 
-# Singleton config instance
+# Singleton config instance - always available
 TRAINING_CONFIG = TrainingConfig()
-WORKFLOW_TAGS = WorkflowTags()
+
+
+def get_workflow_tags() -> WorkflowTags:
+    """Get workflow tags. Only call this during training, not at import time."""
+    return WorkflowTags()
