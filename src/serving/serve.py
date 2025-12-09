@@ -52,8 +52,6 @@ from src.serving.schemas import (
     RootResponse,
 )
 
-logger = get_logger(__name__)
-
 app = FastAPI(
     title="🍷 Wine Quality Classifier API.",
     description="Wine Quality classification using Ray Serve + MLflow",
@@ -68,7 +66,10 @@ app = FastAPI(
 class WineClassifier:
     def __init__(self, model_uri: str | None = None) -> None:
         """Initialize the classifier, optionally with a model URI."""
-        logger.info("🍷 Initializing Wine Classifier Service")
+        self.logger = get_logger(
+            __name__
+        )  # Configure loguru here (after unpickling) to avoid serialization issues
+        self.logger.info("🍷 Initializing Wine Classifier Service")
         self.status = APIStatus.NOT_READY
         self.model = None
         self.model_info: ModelInfo | None = None
@@ -79,12 +80,12 @@ class WineClassifier:
             try:
                 self._load_model(model_uri)
             except Exception as e:
-                logger.error(f"Failed to load model during initialization: {e}")
+                self.logger.error(f"Failed to load model during initialization: {e}")
                 self.status = APIStatus.UNHEALTHY
 
     def _load_model(self, model_uri: str) -> None:
         """Internal method to load model and fetch metadata."""
-        logger.info(f"📦 Loading model from: {model_uri}")
+        self.logger.info(f"📦 Loading model from: {model_uri}")
         self.status = APIStatus.LOADING
 
         try:
@@ -115,22 +116,22 @@ class WineClassifier:
             )
 
             self.status = APIStatus.HEALTHY
-            logger.success("✅ Model loaded successfully")
-            logger.info(f"   Model UUID: {self.model_info.model_uuid}")
-            logger.info(f"   Run ID: {self.model_info.run_id}")
+            self.logger.success("✅ Model loaded successfully")
+            self.logger.info(f"   Model UUID: {self.model_info.model_uuid}")
+            self.logger.info(f"   Run ID: {self.model_info.run_id}")
             if data_version:
-                logger.info(f"   Data version: {data_version}")
+                self.logger.info(f"   Data version: {data_version}")
 
         except mlflow.exceptions.MlflowException as e:
             self.status = APIStatus.UNHEALTHY
-            logger.error(f"❌ MLflow error loading model: {e}")
+            self.logger.error(f"❌ MLflow error loading model: {e}")
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=f"Failed to load model from MLflow: {str(e)}",
             )
         except Exception as e:
             self.status = APIStatus.UNHEALTHY
-            logger.error(f"❌ Unexpected error loading model: {e}")
+            self.logger.error(f"❌ Unexpected error loading model: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Unexpected error loading model: {str(e)}",
@@ -146,23 +147,23 @@ class WineClassifier:
         new_model_uri = config.get("model_uri")
 
         if not new_model_uri:
-            logger.warning("⚠️ No model_uri provided in config")
+            self.logger.warning("⚠️ No model_uri provided in config")
             return
 
         # If no model loaded yet, load it
         if self.model_info is None:
-            logger.info("🆕 Initial model load via reconfigure")
+            self.logger.info("🆕 Initial model load via reconfigure")
             self._load_model(new_model_uri)
             return
 
         # Check if URI changed
         if self.model_info.model_uri != new_model_uri:
-            logger.info(
+            self.logger.info(
                 f"🔄 Updating model from {self.model_info.model_uri} to {new_model_uri}"
             )
             self._load_model(new_model_uri)
         else:
-            logger.info("ℹ️ Model URI unchanged, skipping reload")
+            self.logger.info("ℹ️ Model URI unchanged, skipping reload")
 
     @app.get(
         "/",
@@ -295,13 +296,13 @@ class WineClassifier:
             )
 
         except ValueError as e:
-            logger.error(f"❌ Validation error: {e}")
+            self.logger.error(f"❌ Validation error: {e}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid input: {str(e)}",
             )
         except Exception as e:
-            logger.error(f"❌ Prediction error: {e}", exc_info=True)
+            self.logger.error(f"❌ Prediction error: {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Prediction failed: {str(e)}",
