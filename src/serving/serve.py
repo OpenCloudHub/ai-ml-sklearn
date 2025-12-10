@@ -52,10 +52,38 @@ from src.serving.schemas import (
     RootResponse,
 )
 
+description = """
+**Wine Quality Classifier API** predicts wine quality scores from physicochemical properties. 🍷
+
+This service is part of the OpenCloudHub MLOps platform, demonstrating model serving with Ray Serve and MLflow integration.
+
+## Predictions
+
+* **POST /predict** — Batch predictions with confidence scores
+* Supports both red and white wines (12 input features)
+* Returns quality scores (3-9) with prediction confidence
+
+## Model Management
+
+* **GET /info** — View loaded model metadata (URI, run ID, data version)
+* **Hot-reload** — Update models without downtime via `reconfigure()`
+* Full traceability to training run, dataset version, and code commit
+
+## Health & Monitoring
+
+* **GET /health** — Liveness probe with uptime and model status
+* Kubernetes-ready health checks for RayService deployments
+"""
+
 app = FastAPI(
-    title="🍷 Wine Quality Classifier API.",
-    description="Wine Quality classification using Ray Serve + MLflow",
+    title="🍷 Wine Quality Classifier API",
+    summary="Predict wine quality from physicochemical properties using scikit-learn models served via Ray Serve.",
+    description=description,
     version="1.0.0",
+    license_info={
+        "name": "Apache 2.0",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0",
+    },
 )
 
 
