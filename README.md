@@ -167,14 +167,14 @@ sequenceDiagram
 
     Ray->>DVC: get_url(data_path, rev=version)
     DVC-->>Ray: S3 URL for dataset
-    Ray->>MinIO: Fetch Parquet data
+    Ray->>MinIO: Fetch CSV data
     MinIO-->>Ray: Dataset + metadata
 
     Ray->>Ray: Train LogisticRegression (joblib backend)
     Ray->>MLflow: autolog() metrics & params
     Ray->>MLflow: log_model() with registry name
-    Ray->>MLflow: set_tags(workflow_uid, image_tag, data_version)
-    Ray->>MLflow: log_artifact(metadata.json)
+    Ray->>MLflow: start_run(tags=workflow_tags)
+    Ray->>MLflow: log_dict(metadata.json)
 
     MLflow-->>Argo: Run ID, Model Version
     Argo-->>GH: Workflow completed
@@ -190,7 +190,7 @@ flowchart LR
 
     subgraph rayserve["Ray Serve Deployment"]
         INGRESS[Ingress Controller]
-        DEPLOY[WineClassifierDeployment]
+        DEPLOY[WineClassifier]
 
         subgraph deployment_internals["Deployment Internals"]
             MODEL[sklearn Pipeline]
@@ -262,8 +262,8 @@ The main training script orchestrates the complete training pipeline:
 **MLflow Integration:**
 
 - `mlflow.sklearn.autolog()` — Automatically captures parameters, metrics, and model signature
-- `mlflow.set_tags()` — Adds workflow traceability tags (argo_workflow_uid, docker_image_tag, dvc_data_version)
-- `mlflow.log_artifact()` — Stores DVC metadata.json for data provenance
+- `mlflow.start_run(tags=...)` — Passes workflow traceability tags (argo_workflow_uid, docker_image_tag, dvc_data_version) at run creation
+- `mlflow.log_dict()` — Stores DVC metadata as JSON artifact for data provenance
 - `mlflow.sklearn.log_model(..., registered_model_name=...)` — Registers model in registry
 
 **Ray Integration:**
@@ -280,7 +280,7 @@ Handles fetching versioned datasets from the data registry:
 # Data flow:
 # 1. dvc.api.get_url() → Resolves version tag to S3 path
 # 2. dvc.api.read() → Fetches metadata.json (feature stats, dataset info)
-# 3. s3fs.S3FileSystem → Opens Parquet file from MinIO
+# 3. s3fs.S3FileSystem → Opens CSV file from MinIO
 # 4. train_test_split() → Creates train/validation sets
 # 5. Returns (X_train, y_train, X_val, y_val, metadata)
 ```
@@ -298,14 +298,14 @@ Pydantic Settings models for typed, validated configuration:
 ```python
 # Two configuration classes:
 #
-# TRAINING_CONFIG (TrainingConfig):
+# TRAINING_CONFIG (TrainingConfig) — singleton, always available:
 #   - mlflow_experiment_name: str
 #   - mlflow_registered_model_name: str
 #   - dvc_repo: str (data-registry URL)
 #   - dvc_data_path: str (path within repo)
 #   - random_state: int
 #
-# WORKFLOW_TAGS (WorkflowTags):
+# get_workflow_tags() → WorkflowTags — lazy-loaded to avoid import errors:
 #   - argo_workflow_uid: str (from ARGO_WORKFLOW_UID env)
 #   - docker_image_tag: str (from DOCKER_IMAGE_TAG env)
 #   - dvc_data_version: str (from DVC_DATA_VERSION env)
@@ -320,14 +320,15 @@ Production-ready model serving with FastAPI integration:
 ```python
 # Key components:
 #
-# app_builder(args: Dict) → Application
+# app_builder(args: AppBuilderArgs) → Application
 #   - Factory function for Ray Serve
 #   - Receives model_uri from deployment config
 #   - Returns bound FastAPI application
 #
-# WineClassifierDeployment:
+# WineClassifier:
 #   - __init__(): Loads model via mlflow.sklearn.load_model()
-#   - predict(): Batch inference on wine features
+#   - _load_model(): Internal method to load and extract metadata
+#   - reconfigure(): Hot-reload models without restart
 #   - Extracts run metadata for /info endpoint
 #
 # FastAPI routes:
@@ -341,11 +342,12 @@ Production-ready model serving with FastAPI integration:
 
 ```python
 # Ray Serve's reconfigure() enables zero-downtime model updates:
-def reconfigure(self, config: Dict):
-    new_uri = config.get("model_uri")
-    if new_uri and new_uri != self.model_uri:
-        self.model = mlflow.sklearn.load_model(new_uri)
-        self.model_uri = new_uri
+def reconfigure(self, config: dict) -> None:
+    new_model_uri = config.get("model_uri")
+    if not new_model_uri:
+        return
+    if self.model_info is None or self.model_info.model_uri != new_model_uri:
+        self._load_model(new_model_uri)  # Reloads model and updates metadata
 ```
 
 #### `schemas.py` — API Contracts
@@ -353,16 +355,18 @@ def reconfigure(self, config: Dict):
 Pydantic models defining the REST API interface:
 
 ```python
-# WineFeatures: Single wine sample (12 features)
-#   - fixed_acidity, volatile_acidity, citric_acid, ...
-#
-# PredictionRequest: Batch of samples
-#   - samples: List[WineFeatures] (max 1000)
+# PredictionRequest: Batch input with validation
+#   - features: List[List[float]] — each inner list has 12 values
+#   - Validates feature count, checks for NaN/infinite values
+#   - Max batch size from SERVING_CONFIG.request_max_length
 #
 # PredictionResponse: Batch of predictions
-#   - predictions: List[int] (quality scores)
+#   - predictions: List[Prediction] (quality_score + confidence)
 #   - model_uri: str
+#   - timestamp: datetime
 #   - processing_time_ms: float
+#
+# Additional models: HealthResponse, ModelInfo, RootResponse, ErrorResponse
 ```
 
 ### CI/CD Workflows (`.github/workflows/`)
@@ -371,13 +375,17 @@ Pydantic models defining the REST API interface:
 
 ```yaml
 # Workflow dispatch inputs:
-#   - dvc_data_version: Dataset version tag (e.g., wine-quality-v1.0.0)
-#   - comparison_metric: Metric for model comparison (default: accuracy)
-#   - comparison_threshold: Minimum improvement to promote
+#   - dvc_data_version: Dataset version tag (default: 'latest')
+#   - training_entrypoint: Script to run (default: 'python src/training/train.py')
+#   - training_args: Additional CLI args (e.g., '--C 0.9 --max-iter 90')
+#   - training_image_tag / serving_image_tag: Docker image versions
+#   - compute_type: Resource config (cpu-small, cpu-medium, cpu-large, etc.)
+#   - approval_mode: 'manual' or 'automatic' model promotion
+#   - comparison_metric / comparison_threshold: Model comparison settings
 #
 # Flow:
 #   1. Calls reusable workflow from .github repo
-#   2. Resolves Docker image tag (SHA-tagged matching 'latest')
+#   2. Resolves Docker image tags
 #   3. Submits Argo Workflow with parameters
 #   4. Argo runs training job on Kubernetes
 ```
@@ -493,12 +501,14 @@ RAY_ADDRESS='http://127.0.0.1:8265' ray job submit --working-dir . -- \
 
 **CLI Arguments:**
 
-| Argument         | Default  | Description                                            |
-| ---------------- | -------- | ------------------------------------------------------ |
-| `--C`            | `1.0`    | Regularization strength (inverse)                      |
-| `--max-iter`     | `100`    | Maximum solver iterations                              |
-| `--solver`       | `lbfgs`  | Optimization algorithm                                 |
-| `--data-version` | from env | DVC dataset version (overridden by `DVC_DATA_VERSION`) |
+| Argument     | Default | Description                       |
+| ------------ | ------- | --------------------------------- |
+| `--C`        | `1.0`   | Regularization strength (inverse) |
+| `--max-iter` | `100`   | Maximum solver iterations         |
+| `--solver`   | `lbfgs` | Optimization algorithm            |
+| `--run-name` | auto    | Custom MLflow run name            |
+
+> **Note:** Dataset version is set via the `DVC_DATA_VERSION` environment variable, not a CLI argument.
 
 ### Serving
 

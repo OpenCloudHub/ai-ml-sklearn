@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       dvc_data_version:
-        description: 'Data version (latest or specific like v0.2.0)'
+        description: 'Data version (latest or specific like v1.0.0)'
         required: false
         type: string
         default: 'latest'
@@ -37,9 +37,6 @@ on:
           - 'cpu-small-distributed'
           - 'cpu-medium'
           - 'cpu-large'
-          - 'gpu-small'
-          - 'gpu-medium'
-          - 'gpu-large'
         default: 'cpu-small'
       approval_mode:
         description: 'Approval mode'

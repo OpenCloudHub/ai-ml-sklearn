@@ -20,10 +20,6 @@
 #   # Development with hot-reload:
 #   serve run src.serving.serve:app_builder model_uri="models:/wine-classifier/1" --reload
 #
-#   # Production deployment:
-#   serve build src.serving.serve:app_builder -o serve_config.yaml
-#   serve deploy serve_config.yaml
-#
 # MLflow Integration:
 #   - Models loaded via mlflow.sklearn.load_model(model_uri)
 #   - Supports URIs like 'models:/model-name/version' or 'runs:/run-id/model'

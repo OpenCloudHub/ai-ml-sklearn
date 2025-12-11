@@ -28,7 +28,6 @@
 """
 Test script for Wine Quality Classifier FastAPI deployment
 """
-# TODO: use pytest
 
 import os
 import sys

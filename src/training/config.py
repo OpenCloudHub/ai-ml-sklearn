@@ -9,19 +9,10 @@
 #                   DVC_DATA_VERSION) - required for reproducible training
 #   - TrainingConfig: Application settings (MLflow, DVC paths, random state)
 #
-# Configuration is loaded from environment variables automatically.
-# For local development, create a .env file with required values.
-#
 # IMPORTANT - Lazy Loading:
 #   WorkflowTags are lazy-loaded via get_workflow_tags() to prevent import
 #   failures in serving code that imports training modules but doesn't need
 #   the workflow environment variables.
-#
-# MLflow Tagging:
-#   All WorkflowTags are applied to MLflow runs, enabling filtering by:
-#   - Argo workflow run ID
-#   - Docker image version
-#   - Dataset version
 #
 # ==============================================================================
 
